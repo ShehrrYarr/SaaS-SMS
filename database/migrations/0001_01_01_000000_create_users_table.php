@@ -13,12 +13,27 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('school_id')->nullable()->comment('null = platform super admin')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('username', 60)->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone', 30)->nullable();
             $table->string('password');
+            $table->string('avatar')->nullable();
+            $table->string('user_type', 30);
+            $table->string('status', 20)->default('active');
+            $table->boolean('must_change_password')->default(false);
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip', 45)->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+
+            // One account per school: login identifiers are unique within a school.
+            $table->unique(['school_id', 'email']);
+            $table->unique(['school_id', 'username']);
+            $table->unique(['school_id', 'phone']);
+            $table->index(['school_id', 'user_type', 'status']);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
