@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditsChanges;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Section extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     protected function casts(): array
     {
@@ -47,5 +49,18 @@ class Section extends TenantModel
     public function students(): HasMany
     {
         return $this->hasMany(StudentProfile::class);
+    }
+
+    /**
+     * @param  Builder<Section>  $query
+     */
+    public function scopeOrdered(Builder $query): void
+    {
+        $query->orderBy('name');
+    }
+
+    public function isInUse(): bool
+    {
+        return $this->students()->exists();
     }
 }

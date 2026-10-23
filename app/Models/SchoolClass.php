@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditsChanges;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SchoolClass extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     protected $table = 'classes';
 
@@ -63,5 +65,42 @@ class SchoolClass extends TenantModel
     public function feeStructures(): HasMany
     {
         return $this->hasMany(FeeStructure::class, 'class_id');
+    }
+
+    /**
+     * @return HasMany<StudentEnrollment, $this>
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class, 'class_id');
+    }
+
+    /**
+     * Lowest level first: the order classes are listed and promoted in.
+     *
+     * @param  Builder<SchoolClass>  $query
+     */
+    public function scopeOrdered(Builder $query): void
+    {
+        $query->orderByRaw('numeric_level is null')->orderBy('numeric_level')->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
+     * Has students or enrollment history, so it must not be deleted.
+     */
+    public function isInUse(): bool
+    {
+        return $this->students()->exists() || $this->enrollments()->exists();
+    }
+
+    protected static function booted(): void
+    {
+        // Soft-deleting a class takes its sections and subject allocations with it.
+        static::deleting(function (SchoolClass $class) {
+            if (! $class->isForceDeleting()) {
+                $class->sections()->get()->each->delete();
+                $class->subjectAllocations()->get()->each->delete();
+            }
+        });
     }
 }

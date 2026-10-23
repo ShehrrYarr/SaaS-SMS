@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Department extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     /**
      * @return BelongsTo<Campus, $this>

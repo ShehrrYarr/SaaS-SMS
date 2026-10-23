@@ -8,8 +8,9 @@
  *     Blade: wire:click="$dispatch('open-modal', { component: 'forms.academic-year' })"
  * Close it from the form:  $this->dispatch('close-modal')
  *
- * Only "forms.*" components can be opened, and each form authorises itself
- * in mount(), so a crafted event can't render anything else.
+ * Only "forms.*" (editing) and "modals.*" (read-only) components can be
+ * opened, and each one authorises itself in mount(), so a crafted event can't
+ * render anything else.
  */
 
 use function Livewire\Volt\{on, state};
@@ -18,7 +19,7 @@ state(['component' => null, 'params' => [], 'size' => 'md', 'opened' => 0]);
 
 on([
     'open-modal' => function (string $component, array $params = [], string $size = 'md') {
-        abort_unless(str_starts_with($component, 'forms.'), 403);
+        abort_unless(str_starts_with($component, 'forms.') || str_starts_with($component, 'modals.'), 403);
 
         $this->component = $component;
         $this->params = $params;

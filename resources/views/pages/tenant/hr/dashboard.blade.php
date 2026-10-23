@@ -30,4 +30,8 @@ $stats = computed(fn () => [
     </div>
 
     <x-dashboard.welcome />
+
+    <div class="mt-4">
+        <x-notices.latest />
+    </div>
 </div>

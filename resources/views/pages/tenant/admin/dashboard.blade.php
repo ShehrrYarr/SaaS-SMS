@@ -7,6 +7,7 @@ use App\Models\SchoolClass;
 use App\Models\StaffProfile;
 use App\Models\StudentProfile;
 use App\Models\Subject;
+use App\Models\SubjectClass;
 
 use function Livewire\Volt\{computed, layout, title};
 
@@ -22,10 +23,11 @@ $stats = computed(fn () => [
 
 // Setup progress for a newly provisioned school.
 $setup = computed(fn () => [
-    ['label' => __('Set the current academic year'), 'done' => AcademicYear::current()->exists()],
-    ['label' => __('Add a campus'), 'done' => Campus::exists()],
-    ['label' => __('Create classes and sections'), 'done' => SchoolClass::exists()],
-    ['label' => __('Add subjects'), 'done' => Subject::exists()],
+    ['label' => __('Set the current academic year'), 'done' => AcademicYear::current()->exists(), 'route' => 'admin.academic-years.index'],
+    ['label' => __('Add a campus'), 'done' => Campus::exists(), 'route' => 'admin.campuses.index'],
+    ['label' => __('Create classes and sections'), 'done' => SchoolClass::exists(), 'route' => 'admin.classes.index'],
+    ['label' => __('Add subjects'), 'done' => Subject::exists(), 'route' => 'admin.subjects.index'],
+    ['label' => __('Allocate subjects to classes'), 'done' => SubjectClass::exists(), 'route' => 'admin.subjects.allocation'],
     ['label' => __('Add staff'), 'done' => StaffProfile::exists()],
     ['label' => __('Admit students'), 'done' => StudentProfile::exists()],
 ]);
@@ -62,11 +64,20 @@ $setup = computed(fn () => [
                             @else
                                 <i class="ri-checkbox-blank-circle-line text-muted fs-5"></i>
                             @endif
-                            <span @class(['text-muted text-decoration-line-through' => $step['done']])>{{ $step['label'] }}</span>
+                            @if (! $step['done'] && isset($step['route']) && Route::has($step['route']))
+                                <a href="{{ route($step['route']) }}" wire:navigate class="flex-grow-1">{{ $step['label'] }}</a>
+                                <i class="ri-arrow-right-s-line text-muted"></i>
+                            @else
+                                <span @class(['text-muted text-decoration-line-through' => $step['done']])>{{ $step['label'] }}</span>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
             </div>
         </div>
+    </div>
+
+    <div class="mt-4">
+        <x-notices.latest />
     </div>
 </div>

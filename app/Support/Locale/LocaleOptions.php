@@ -55,6 +55,31 @@ class LocaleOptions
     public const DATE_FORMATS = ['d M Y', 'd/m/Y', 'm/d/Y', 'Y-m-d', 'd-m-Y', 'd.m.Y', 'M d, Y'];
 
     /**
+     * @var list<string>
+     */
+    public const TIME_FORMATS = ['h:i A', 'H:i'];
+
+    /**
+     * @return array<string, string> format => the current time in that format
+     */
+    public static function timeFormats(): array
+    {
+        $now = Carbon::now();
+
+        return collect(self::TIME_FORMATS)->mapWithKeys(fn (string $format) => [$format => $now->format($format)])->all();
+    }
+
+    /**
+     * Days a school week can start on (ISO day numbers).
+     *
+     * @return array<int, string>
+     */
+    public static function weekStarts(): array
+    {
+        return [1 => __('Monday'), 6 => __('Saturday'), 7 => __('Sunday')];
+    }
+
+    /**
      * @return array<string, string> code => "PKR (Rs)"
      */
     public static function currencies(): array

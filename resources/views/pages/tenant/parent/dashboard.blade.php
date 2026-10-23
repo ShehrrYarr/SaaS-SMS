@@ -35,4 +35,8 @@ $children = computed(fn () => auth()->user()->parentProfile?->children()->with([
             </div>
         </div>
     </div>
+
+    <div class="mt-4">
+        <x-notices.latest />
+    </div>
 </div>

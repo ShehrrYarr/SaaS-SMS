@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Enums\ClassroomType;
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Classroom extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     protected function casts(): array
     {

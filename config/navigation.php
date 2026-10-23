@@ -44,6 +44,7 @@ return [
             ['label' => 'Classes & Sections', 'route' => 'admin.classes.index', 'can' => 'classes.view'],
             ['label' => 'Classrooms', 'route' => 'admin.classrooms.index', 'can' => 'classrooms.view'],
             ['label' => 'Subjects', 'route' => 'admin.subjects.index', 'can' => 'subjects.view'],
+            ['label' => 'Subject Allocation', 'route' => 'admin.subjects.allocation', 'can' => 'subjects.allocate'],
         ]],
         ['label' => 'Timetable', 'icon' => 'ri-time-line', 'route' => 'admin.timetable.index', 'can' => 'timetable.view'],
         ['label' => 'Examinations', 'icon' => 'ri-file-list-3-line', 'children' => [
@@ -90,6 +91,7 @@ return [
         ['label' => 'Homework', 'icon' => 'ri-book-open-line', 'route' => 'teacher.homework.index', 'can' => 'homework.view'],
         ['label' => 'Student Leave', 'icon' => 'ri-calendar-close-line', 'route' => 'teacher.student-leave.index', 'can' => 'student-leave.view'],
         ['label' => 'Timetable', 'icon' => 'ri-time-line', 'route' => 'teacher.timetable', 'can' => 'timetable.view'],
+        ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],
 
     'hr' => [
@@ -105,6 +107,8 @@ return [
         ['heading' => 'Payroll'],
         ['label' => 'Payroll', 'icon' => 'ri-money-dollar-box-line', 'route' => 'hr.payroll.index', 'can' => 'payroll.view'],
         ['label' => 'Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'hr.payslips.index', 'can' => 'payroll.view'],
+        ['heading' => 'Communication'],
+        ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],
 
     'accounting' => [
@@ -125,6 +129,8 @@ return [
         ['label' => 'Expenses', 'icon' => 'ri-shopping-bag-3-line', 'route' => 'accounting.expenses.index', 'can' => 'expenses.view'],
         ['label' => 'Income', 'icon' => 'ri-funds-line', 'route' => 'accounting.income.index', 'can' => 'income.view'],
         ['label' => 'Reports', 'icon' => 'ri-bar-chart-box-line', 'route' => 'accounting.reports.index', 'can' => 'finance-reports.view'],
+        ['heading' => 'Communication'],
+        ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],
 
     'student' => [
@@ -136,7 +142,7 @@ return [
         ['label' => 'Homework', 'icon' => 'ri-book-open-line', 'route' => 'student.homework.index'],
         ['label' => 'Results', 'icon' => 'ri-award-line', 'route' => 'student.results'],
         ['label' => 'Fees', 'icon' => 'ri-bill-line', 'route' => 'student.invoices.index'],
-        ['label' => 'Notices', 'icon' => 'ri-megaphone-line', 'route' => 'student.notices'],
+        ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],
 
     'parent' => [
@@ -148,7 +154,7 @@ return [
         ['label' => 'Results', 'icon' => 'ri-award-line', 'route' => 'parent.results'],
         ['label' => 'Fees', 'icon' => 'ri-bill-line', 'route' => 'parent.invoices.index'],
         ['label' => 'Leave Requests', 'icon' => 'ri-calendar-close-line', 'route' => 'parent.leave.index'],
-        ['label' => 'Notices', 'icon' => 'ri-megaphone-line', 'route' => 'parent.notices'],
+        ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],
 
 ];

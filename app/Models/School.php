@@ -7,6 +7,7 @@ use App\Enums\SchoolStatus;
 use App\Enums\StudentStatus;
 use App\Enums\SubscriptionState;
 use App\Enums\UserType;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -232,6 +233,22 @@ class School extends Model
         $endsAt = $this->accessEndsAt();
 
         return $endsAt === null ? null : (int) today()->diffInDays($endsAt, false);
+    }
+
+    /**
+     * A stored (UTC) timestamp in the school's own timezone, for display.
+     */
+    public function localTime(CarbonInterface $time): CarbonInterface
+    {
+        return $time->copy()->setTimezone($this->setting('timezone') ?: config('app.timezone'));
+    }
+
+    /**
+     * Today's date where the school is (attendance, notices, due dates).
+     */
+    public function today(): Carbon
+    {
+        return Carbon::now($this->setting('timezone') ?: config('app.timezone'))->startOfDay();
     }
 
     /**

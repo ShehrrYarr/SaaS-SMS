@@ -68,3 +68,44 @@ function makeUserWithRole(School $school, UserType $type, string|array $roles, a
 
     return $user;
 }
+
+/**
+ * A student account with its profile, optionally placed in a class.
+ */
+function makeStudent(School $school, ?App\Models\SchoolClass $class = null, array $attributes = []): App\Models\StudentProfile
+{
+    $user = makeUserWithRole($school, UserType::Student, 'Student', $attributes);
+
+    return tenancy()->run($school, fn () => App\Models\StudentProfile::query()->create([
+        'user_id' => $user->id,
+        'admission_number' => 'ADM-'.$user->id,
+        'class_id' => $class?->id,
+        'status' => App\Enums\StudentStatus::Active,
+    ]));
+}
+
+/**
+ * A parent account linked to the given children.
+ */
+function makeParentOf(School $school, App\Models\StudentProfile ...$children): App\Models\ParentProfile
+{
+    $user = makeUserWithRole($school, UserType::Parent, 'Parent');
+
+    return tenancy()->run($school, function () use ($user, $children) {
+        $parent = App\Models\ParentProfile::query()->create(['user_id' => $user->id]);
+        $parent->children()->attach(collect($children)->pluck('id')->all(), ['relation' => 'guardian']);
+
+        return $parent;
+    });
+}
+
+/**
+ * A staff profile for an existing staff account.
+ */
+function makeStaffProfile(School $school, User $user): App\Models\StaffProfile
+{
+    return tenancy()->run($school, fn () => App\Models\StaffProfile::query()->create([
+        'user_id' => $user->id,
+        'employee_id' => 'EMP-'.$user->id,
+    ]));
+}

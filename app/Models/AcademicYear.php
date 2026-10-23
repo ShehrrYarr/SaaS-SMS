@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AcademicPeriodStatus;
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class AcademicYear extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     protected static function booted(): void
     {

@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Enums\SubjectType;
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subject extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     protected function casts(): array
     {

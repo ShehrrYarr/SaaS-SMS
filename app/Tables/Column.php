@@ -32,6 +32,8 @@ class Column
 
     private bool $hiddenOnMobile = false;
 
+    private bool $virtual = false;
+
     final public function __construct(public readonly string $key, ?string $label = null)
     {
         $this->label = $label ?? Str::headline(Str::afterLast($key, '.'));
@@ -117,6 +119,25 @@ class Column
     }
 
     /**
+     * Format a timestamp in the school's timezone, date and time formats.
+     */
+    public function dateTime(): static
+    {
+        return $this->format(function (mixed $value) {
+            if (blank($value)) {
+                return null;
+            }
+
+            $school = tenant();
+            $time = Carbon::parse($value);
+
+            return $school
+                ? $school->localTime($time)->format($school->setting('date_format').', '.$school->setting('time_format'))
+                : $time->format('d M Y, H:i');
+        });
+    }
+
+    /**
      * Format an amount with the school's currency symbol.
      */
     public function money(): static
@@ -151,6 +172,17 @@ class Column
         return $this;
     }
 
+    /**
+     * The key isn't an attribute: the formatter or view works the cell out
+     * from the row (it receives null as the value).
+     */
+    public function virtual(): static
+    {
+        $this->virtual = true;
+
+        return $this;
+    }
+
     public function isSortable(): bool
     {
         return $this->sortable !== false;
@@ -168,7 +200,7 @@ class Column
 
     public function value(Model $row): mixed
     {
-        return data_get($row, $this->key);
+        return $this->virtual ? null : data_get($row, $this->key);
     }
 
     public function render(Model $row): string|Htmlable|null

@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 // Needs the scheduler on the server: * * * * * php artisan schedule:run
 Schedule::command('schools:enforce-subscriptions')->dailyAt('00:30')->withoutOverlapping()->onOneServer();
+Schedule::command('notices:announce')->everyFiveMinutes()->withoutOverlapping()->onOneServer();

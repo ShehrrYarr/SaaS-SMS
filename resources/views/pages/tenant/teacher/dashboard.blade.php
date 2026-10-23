@@ -50,4 +50,8 @@ $homeroomSections = computed(fn () => $this->staffId()
             </div>
         @endif
     </div>
+
+    <div class="mt-4">
+        <x-notices.latest />
+    </div>
 </div>
