@@ -6,6 +6,7 @@ use App\Enums\LeaveStatus;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Leave for a staff member (applied by themself) or a student (applied by a
@@ -14,6 +15,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class LeaveRequest extends TenantModel
 {
     use SoftDeletes;
+
+    /** Disk for attachments (medical certificates): private, served through an authorised route. */
+    public const DISK = 'local';
+
+    protected static function booted(): void
+    {
+        static::forceDeleted(function (LeaveRequest $request) {
+            if ($request->attachment) {
+                Storage::disk(self::DISK)->delete($request->attachment);
+            }
+        });
+    }
 
     protected function casts(): array
     {

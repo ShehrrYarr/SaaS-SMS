@@ -400,7 +400,7 @@ $startOver = function () {
                                     <div class="col-sm-4"><x-form.input name="period_start" type="date" :label="__('Covers from')" required live /></div>
                                     <div class="col-sm-4"><x-form.input name="period_end" type="date" :label="__('Covers until')" required /></div>
                                     <div class="col-sm-4"><x-form.input name="paid_on" type="date" :label="__('Paid on')" required :max="today()->toDateString()" /></div>
-                                    <div class="col-sm-4"><x-form.select name="payment_method" :label="__('Method')" :options="PaymentMethod::options()" :placeholder="null" required /></div>
+                                    <div class="col-sm-4"><x-form.select name="payment_method" :label="__('Method')" :options="PaymentMethod::options()" :placeholder="false" required /></div>
                                     <div class="col-sm-4"><x-form.input name="reference" :label="__('Reference')" maxlength="100" :placeholder="__('Receipt or transfer no.')" /></div>
                                 </div>
                             @else
@@ -410,10 +410,10 @@ $startOver = function () {
                             <h5 class="mt-3 mb-1">{{ __('Regional settings') }}</h5>
                             <p class="text-muted mb-3">{{ __('Used for fees, dates and times. The school admin can change them later.') }}</p>
                             <div class="row">
-                                <div class="col-sm-6 col-lg-3"><x-form.select name="currency_code" :label="__('Currency')" :options="LocaleOptions::currencies()" :placeholder="null" required live /></div>
+                                <div class="col-sm-6 col-lg-3"><x-form.select name="currency_code" :label="__('Currency')" :options="LocaleOptions::currencies()" :placeholder="false" required live /></div>
                                 <div class="col-sm-6 col-lg-3"><x-form.input name="currency_symbol" :label="__('Symbol')" required maxlength="8" /></div>
-                                <div class="col-sm-6 col-lg-3"><x-form.select name="timezone" :label="__('Timezone')" :options="LocaleOptions::timezones()" :placeholder="null" required /></div>
-                                <div class="col-sm-6 col-lg-3"><x-form.select name="date_format" :label="__('Date format')" :options="LocaleOptions::dateFormats()" :placeholder="null" required wrapper="mb-0" /></div>
+                                <div class="col-sm-6 col-lg-3"><x-form.select name="timezone" :label="__('Timezone')" :options="LocaleOptions::timezones()" :placeholder="false" required /></div>
+                                <div class="col-sm-6 col-lg-3"><x-form.select name="date_format" :label="__('Date format')" :options="LocaleOptions::dateFormats()" :placeholder="false" required wrapper="mb-0" /></div>
                             </div>
                         @elseif ($step === 3)
                             <h5 class="mb-1">{{ __('First administrator') }}</h5>

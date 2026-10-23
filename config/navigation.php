@@ -63,7 +63,10 @@ return [
             ['label' => 'All Staff', 'route' => 'admin.staff.index', 'can' => 'staff.view'],
             ['label' => 'Bulk Import', 'route' => 'admin.staff.import', 'can' => 'staff.import'],
         ]],
-        ['label' => 'Attendance', 'icon' => 'ri-calendar-check-line', 'route' => 'admin.attendance.index', 'can' => 'attendance.manage'],
+        ['label' => 'Attendance', 'icon' => 'ri-calendar-check-line', 'children' => [
+            ['label' => 'Daily Registers', 'route' => 'admin.attendance.index', 'can' => 'attendance.manage'],
+            ['label' => 'Monthly Report', 'route' => 'admin.attendance.report', 'can' => 'attendance.view'],
+        ]],
 
         ['heading' => 'Communication'],
         ['label' => 'Notices', 'icon' => 'ri-megaphone-line', 'route' => 'admin.notices.index', 'can' => 'notices.view'],
@@ -87,6 +90,7 @@ return [
         ['heading' => 'Classroom'],
         ['label' => 'My Classes', 'icon' => 'ri-group-line', 'route' => 'teacher.classes.index'],
         ['label' => 'Attendance', 'icon' => 'ri-calendar-check-line', 'route' => 'teacher.attendance.index', 'can' => 'attendance.mark'],
+        ['label' => 'Attendance Report', 'icon' => 'ri-table-line', 'route' => 'teacher.attendance.report', 'can' => 'attendance.view'],
         ['label' => 'Gradebook', 'icon' => 'ri-file-edit-line', 'route' => 'teacher.gradebook.index', 'can' => 'marks.edit'],
         ['label' => 'Homework', 'icon' => 'ri-book-open-line', 'route' => 'teacher.homework.index', 'can' => 'homework.view'],
         ['label' => 'Student Leave', 'icon' => 'ri-calendar-close-line', 'route' => 'teacher.student-leave.index', 'can' => 'student-leave.view'],

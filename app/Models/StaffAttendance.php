@@ -10,6 +10,9 @@ class StaffAttendance extends TenantModel
 {
     use AuditsChanges;
 
+    /** Taking a register isn't logged (the register logs one summary); corrections are. */
+    protected static $recordEvents = ['updated', 'deleted'];
+
     protected function casts(): array
     {
         return [

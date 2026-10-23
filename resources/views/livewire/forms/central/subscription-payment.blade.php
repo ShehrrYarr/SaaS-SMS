@@ -158,7 +158,7 @@ $save = function (SubscriptionManager $subscriptions) {
             <div class="col-sm-6"><x-form.input name="period_start" type="date" :label="__('Covers from')" required live /></div>
             <div class="col-sm-6"><x-form.input name="period_end" type="date" :label="__('Covers until')" required /></div>
             <div class="col-sm-6"><x-form.input name="paid_on" type="date" :label="__('Paid on')" required :max="today()->toDateString()" /></div>
-            <div class="col-sm-6"><x-form.select name="payment_method" :label="__('Method')" :options="PaymentMethod::options()" :placeholder="null" required /></div>
+            <div class="col-sm-6"><x-form.select name="payment_method" :label="__('Method')" :options="PaymentMethod::options()" :placeholder="false" required /></div>
             <div class="col-sm-6"><x-form.input name="reference" :label="__('Reference')" maxlength="100" :placeholder="__('Receipt or transfer no.')" /></div>
             <div class="col-sm-6"><x-form.textarea name="notes" :label="__('Notes')" rows="1" maxlength="1000" /></div>
         </div>

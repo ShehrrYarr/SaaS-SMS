@@ -34,6 +34,16 @@ class Portal
         return config("access.portals.{$portal}.icon", 'ri-apps-line');
     }
 
+    /**
+     * A route inside a portal: Portal::route('hr', 'staff.show', $id) → hr.staff.show.
+     * Screens shared by two portals (staff in Admin and HR) link within the
+     * portal they were opened in.
+     */
+    public static function route(?string $portal, string $name, mixed $parameters = []): string
+    {
+        return route(($portal ?? static::current() ?? 'admin').'.'.$name, $parameters);
+    }
+
     public static function dashboardRoute(string $portal): string
     {
         return "{$portal}.dashboard";

@@ -148,7 +148,7 @@ $save = function () {
             <a href="{{ route('admin.academic-years.index') }}" wire:navigate class="alert-link">{{ __('Academic years') }}</a>
         </div>
     @else
-        <x-form.select name="academic_year_id" :label="__('Academic year')" required live :placeholder="null"
+        <x-form.select name="academic_year_id" :label="__('Academic year')" required live :placeholder="false"
                        :options="$this->years->mapWithKeys(fn ($year) => [$year->id => $year->name.($year->isCurrent() ? ' ('.__('current').')' : '')])->all()" />
 
         <x-form.input name="name" :label="__('Name')" required maxlength="50" :placeholder="__('e.g. Term 1, Fall semester')" />
@@ -158,7 +158,7 @@ $save = function () {
             <div class="col-sm-6"><x-form.input name="end_date" type="date" :label="__('End date')" required /></div>
         </div>
 
-        <x-form.select name="status" :label="__('Status')" :options="AcademicPeriodStatus::options()" :placeholder="null" required wrapper="mb-0"
+        <x-form.select name="status" :label="__('Status')" :options="AcademicPeriodStatus::options()" :placeholder="false" required wrapper="mb-0"
                        :hint="__('Only one term per year can be current.')" />
     @endif
 </x-modal.form>

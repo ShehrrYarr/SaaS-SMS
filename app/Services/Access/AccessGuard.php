@@ -4,6 +4,7 @@ namespace App\Services\Access;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Access\PermissionCatalog;
 use Illuminate\Support\Collection;
 
 /**
@@ -17,7 +18,10 @@ use Illuminate\Support\Collection;
  *    holds everything that account holds.
  *
  * Holdings are compared through roles, before the plan filter, so a missing
- * plan feature never stops an administrator managing an account.
+ * plan feature never stops an administrator managing an account. Entry to
+ * the student and parent portals is left out of the comparison: those
+ * portals only show a person their own records, so they give no power over
+ * anyone else (and "*" deliberately doesn't include them).
  */
 class AccessGuard
 {
@@ -41,7 +45,10 @@ class AccessGuard
 
     public function canAssign(User $editor, Role $role): bool
     {
-        return $role->permissions->pluck('name')->diff($this->permissionsOf($editor))->isEmpty();
+        return $role->permissions->pluck('name')
+            ->diff($this->permissionsOf($editor))
+            ->diff(PermissionCatalog::selfServicePortalPermissions())
+            ->isEmpty();
     }
 
     public function canManage(User $editor, User $account): bool
@@ -50,7 +57,10 @@ class AccessGuard
             return false;
         }
 
-        return $this->permissionsOf($account)->diff($this->permissionsOf($editor))->isEmpty();
+        return $this->permissionsOf($account)
+            ->diff($this->permissionsOf($editor))
+            ->diff(PermissionCatalog::selfServicePortalPermissions())
+            ->isEmpty();
     }
 
     public function forget(?User $user = null): void

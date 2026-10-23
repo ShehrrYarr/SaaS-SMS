@@ -3,14 +3,28 @@
 namespace App\Models;
 
 use App\Enums\Gender;
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
 
 class StaffProfile extends TenantModel
 {
+    use AuditsChanges {
+        getActivitylogOptions as defaultActivitylogOptions;
+    }
     use SoftDeletes;
+
+    /** Hiring and removal are logged by StaffRecords with their context; edits by the model. */
+    protected static $recordEvents = ['updated'];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        // Bank details are encrypted at rest and never copied into the log.
+        return $this->defaultActivitylogOptions()->logExcept(['created_at', 'updated_at', 'bank_details']);
+    }
 
     protected $hidden = ['bank_details'];
 

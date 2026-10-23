@@ -84,7 +84,7 @@ $save = function () {
 
     <x-form.textarea name="address" :label="__('Address')" rows="2" maxlength="500" />
 
-    <x-form.select name="status" :label="__('Status')" :options="RecordStatus::options()" :placeholder="null" required />
+    <x-form.select name="status" :label="__('Status')" :options="RecordStatus::options()" :placeholder="false" required />
 
     @if ($isMain)
         <p class="text-muted fs-13 mb-0"><i class="ri-star-fill text-primary me-1"></i>{{ __('This is the main campus. To change that, make another campus main.') }}</p>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Tenant\HomeController;
+use App\Http\Controllers\Tenant\LeaveAttachmentController;
 use App\Http\Controllers\Tenant\NoticeAttachmentController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -25,6 +26,15 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
         });
 
         Route::middleware(['auth', 'account'])->group(function () {
+            // Staff screens live in both the School Admin and HR portals.
+            $staffRoutes = function () {
+                Volt::route('staff', 'tenant.staff.index')->middleware('can:staff.view')->name('staff.index');
+                Volt::route('staff/create', 'tenant.staff.form')->middleware('can:staff.create')->name('staff.create');
+                Volt::route('staff/import', 'tenant.staff.import')->middleware('can:staff.import')->name('staff.import');
+                Volt::route('staff/{staff}', 'tenant.staff.show')->middleware('can:staff.view')->whereNumber('staff')->name('staff.show');
+                Volt::route('staff/{staff}/edit', 'tenant.staff.form')->middleware('can:staff.edit')->whereNumber('staff')->name('staff.edit');
+            };
+
             Route::get('/', HomeController::class)->name('tenant.home');
 
             Volt::route('password/change', 'tenant.auth.change-password')->name('tenant.password.change');
@@ -33,8 +43,9 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
             Volt::route('notices', 'tenant.notices.index')->name('tenant.notices.index');
             Volt::route('notices/{notice}', 'tenant.notices.show')->whereNumber('notice')->name('tenant.notices.show');
             Route::get('notices/{notice}/attachment', NoticeAttachmentController::class)->whereNumber('notice')->name('tenant.notices.attachment');
+            Route::get('leave/{leaveRequest}/attachment', LeaveAttachmentController::class)->whereNumber('leaveRequest')->name('tenant.leave.attachment');
 
-            Route::prefix('admin')->name('admin.')->middleware('portal:admin')->group(function () {
+            Route::prefix('admin')->name('admin.')->middleware('portal:admin')->group(function () use ($staffRoutes) {
                 Volt::route('/', 'tenant.admin.dashboard')->name('dashboard');
 
                 // Academic setup
@@ -46,6 +57,18 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('classrooms', 'tenant.admin.classrooms.index')->middleware('can:classrooms.view')->name('classrooms.index');
                 Volt::route('subjects', 'tenant.admin.subjects.index')->middleware('can:subjects.view')->name('subjects.index');
                 Volt::route('subjects/allocation', 'tenant.admin.subjects.allocation')->middleware('can:subjects.allocate')->name('subjects.allocation');
+
+                // People
+                Volt::route('students', 'tenant.admin.students.index')->middleware('can:students.view')->name('students.index');
+                Volt::route('students/admit', 'tenant.admin.students.form')->middleware('can:students.create')->name('students.create');
+                Volt::route('students/import', 'tenant.admin.students.import')->middleware('can:students.import')->name('students.import');
+                Volt::route('students/promote', 'tenant.admin.students.promote')->middleware('can:students.promote')->name('students.promote');
+                Volt::route('students/{student}', 'tenant.admin.students.show')->middleware('can:students.view')->whereNumber('student')->name('students.show');
+                Volt::route('students/{student}/edit', 'tenant.admin.students.form')->middleware('can:students.edit')->whereNumber('student')->name('students.edit');
+                Volt::route('parents', 'tenant.admin.parents.index')->middleware('can:parents.view')->name('parents.index');
+                $staffRoutes();
+                Volt::route('attendance', 'tenant.admin.attendance.index')->middleware('can:attendance.manage')->name('attendance.index');
+                Volt::route('attendance/report', 'tenant.attendance.report')->middleware('can:attendance.view')->name('attendance.report');
 
                 // Communication
                 Volt::route('notices', 'tenant.admin.notices.index')->middleware('can:notices.view')->name('notices.index');
@@ -60,10 +83,17 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
 
             Route::prefix('teacher')->name('teacher.')->middleware('portal:teacher')->group(function () {
                 Volt::route('/', 'tenant.teacher.dashboard')->name('dashboard');
+                Volt::route('classes', 'tenant.teacher.classes.index')->name('classes.index');
+                Volt::route('attendance', 'tenant.teacher.attendance.index')->middleware('can:attendance.mark')->name('attendance.index');
+                Volt::route('attendance/report', 'tenant.attendance.report')->middleware('can:attendance.view')->name('attendance.report');
+                Volt::route('student-leave', 'tenant.teacher.student-leave.index')->middleware('can:student-leave.view')->name('student-leave.index');
             });
 
-            Route::prefix('hr')->name('hr.')->middleware('portal:hr')->group(function () {
+            Route::prefix('hr')->name('hr.')->middleware('portal:hr')->group(function () use ($staffRoutes) {
                 Volt::route('/', 'tenant.hr.dashboard')->name('dashboard');
+                $staffRoutes();
+                Volt::route('attendance', 'tenant.hr.attendance.index')->middleware('can:staff-attendance.view')->name('attendance.index');
+                Volt::route('leave-types', 'tenant.hr.leave-types.index')->middleware('can:leave.manage')->name('leave-types.index');
             });
 
             Route::prefix('accounting')->name('accounting.')->middleware('portal:accounting')->group(function () {
@@ -76,6 +106,7 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
 
             Route::prefix('parent')->name('parent.')->middleware('portal:parent')->group(function () {
                 Volt::route('/', 'tenant.parent.dashboard')->name('dashboard');
+                Volt::route('leave', 'tenant.parent.leave.index')->name('leave.index');
             });
         });
     });

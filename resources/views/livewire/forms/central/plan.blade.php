@@ -129,7 +129,7 @@ $uniqueSlug = protect(function (string $name) {
 
     <div class="row">
         <div class="col-sm-4"><x-form.input name="price" type="number" step="0.01" min="0" required :label="__('Price (:currency)', ['currency' => Money::currency()])" /></div>
-        <div class="col-sm-4"><x-form.select name="billing_cycle" :label="__('Billed')" :options="BillingCycle::options()" :placeholder="null" required /></div>
+        <div class="col-sm-4"><x-form.select name="billing_cycle" :label="__('Billed')" :options="BillingCycle::options()" :placeholder="false" required /></div>
         <div class="col-sm-4"><x-form.input name="trial_days" type="number" min="0" max="365" required :label="__('Trial (days)')" /></div>
         <div class="col-sm-6"><x-form.input name="max_students" type="number" min="1" :label="__('Max active students')" :placeholder="__('Unlimited')" /></div>
         <div class="col-sm-6"><x-form.input name="max_staff" type="number" min="1" :label="__('Max staff')" :placeholder="__('Unlimited')" /></div>

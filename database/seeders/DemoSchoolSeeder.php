@@ -4,17 +4,16 @@ namespace Database\Seeders;
 
 use App\Enums\AcademicPeriodStatus;
 use App\Enums\PaymentMethod;
-use App\Enums\RecordStatus;
 use App\Enums\SchoolStatus;
 use App\Enums\UserStatus;
 use App\Enums\UserType;
 use App\Models\AcademicYear;
-use App\Models\Campus;
 use App\Models\Plan;
 use App\Models\School;
 use App\Models\User;
 use App\Services\Access\SyncDefaultSchoolRoles;
 use App\Services\Billing\SubscriptionManager;
+use App\Services\Schools\SeedSchoolDefaults;
 use Illuminate\Database\Seeder;
 
 /**
@@ -31,7 +30,7 @@ class DemoSchoolSeeder extends Seeder
 
     public const PASSWORD = 'password';
 
-    public function run(SyncDefaultSchoolRoles $syncRoles, SubscriptionManager $subscriptions): void
+    public function run(SyncDefaultSchoolRoles $syncRoles, SubscriptionManager $subscriptions, SeedSchoolDefaults $defaults): void
     {
         $school = School::query()->firstOrCreate(['slug' => self::SLUG], [
             'name' => 'Greenfield Academy',
@@ -44,10 +43,9 @@ class DemoSchoolSeeder extends Seeder
         ]);
 
         $syncRoles->handle($school);
+        $defaults->handle($school);
 
         tenancy()->run($school, function (): void {
-            Campus::query()->firstOrCreate(['name' => 'Main Campus'], ['is_main' => true, 'status' => RecordStatus::Active]);
-
             $year = now()->month >= 8 ? now()->year : now()->year - 1;
 
             AcademicYear::query()->firstOrCreate(['name' => $year.'-'.($year + 1)], [

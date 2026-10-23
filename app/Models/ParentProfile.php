@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ParentProfile extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
+
+    /** New parents are logged with the admission that adds them. */
+    protected static $recordEvents = ['updated', 'deleted'];
 
     /**
      * @return BelongsTo<User, $this>

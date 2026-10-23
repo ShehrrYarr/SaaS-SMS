@@ -5,7 +5,8 @@
         <x-list-page :title="__('Campuses')" :section="__('Academic setup')" :table="App\Tables\CampusesTable::class"
                      create="forms.campus" :create-label="__('New campus')" create-permission="campuses.create" />
 
-    Anything in the slot is shown between the header and the table.
+    Anything in the slot is shown between the header and the table. :portal
+    sets the first breadcrumb (default: School Admin).
 --}}
 @props([
     'title',
@@ -17,10 +18,11 @@
     'createPermission' => null,
     'createParams' => [],
     'createSize' => 'md',
+    'portal' => 'admin',
 ])
 
 @php
-    $breadcrumbs = [__('School Admin') => route('admin.dashboard')] + ($section ? [$section => null] : []) + [$title => null];
+    $breadcrumbs = [App\Support\Portal::label($portal) => route(App\Support\Portal::dashboardRoute($portal))] + ($section ? [$section => null] : []) + [$title => null];
 @endphp
 
 <div>

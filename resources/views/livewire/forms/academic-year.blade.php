@@ -113,6 +113,6 @@ $save = function () {
         </div>
     </div>
 
-    <x-form.select name="status" :label="__('Status')" :options="AcademicPeriodStatus::options()" :placeholder="null" required
+    <x-form.select name="status" :label="__('Status')" :options="AcademicPeriodStatus::options()" :placeholder="false" required
                    :hint="__('Making a year current archives the year that is current now.')" wrapper="mb-0" />
 </x-modal.form>

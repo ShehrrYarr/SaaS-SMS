@@ -4,15 +4,55 @@ namespace App\Models;
 
 use App\Enums\Gender;
 use App\Enums\StudentStatus;
+use App\Models\Concerns\AuditsChanges;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
 
 class StudentProfile extends TenantModel
 {
+    use AuditsChanges {
+        getActivitylogOptions as defaultActivitylogOptions;
+    }
     use SoftDeletes;
+
+    /** Admissions and removals are logged by StudentRecords with their context; edits by the model. */
+    protected static $recordEvents = ['updated'];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        // Health details stay out of the activity log.
+        return $this->defaultActivitylogOptions()->logExcept(['created_at', 'updated_at', 'medical_notes']);
+    }
+
+    /**
+     * @param  Builder<StudentProfile>  $query
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where($query->qualifyColumn('status'), StudentStatus::Active);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === StudentStatus::Active;
+    }
+
+    /**
+     * "Grade 5 · B", or just the class.
+     */
+    public function placementLabel(): ?string
+    {
+        if (! $this->schoolClass) {
+            return null;
+        }
+
+        return $this->schoolClass->name.($this->section ? ' · '.$this->section->name : '');
+    }
 
     protected function casts(): array
     {

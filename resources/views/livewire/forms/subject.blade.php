@@ -64,7 +64,7 @@ $save = function () {
         <div class="col-sm-8"><x-form.input name="name" :label="__('Name')" required maxlength="100" :placeholder="__('e.g. Mathematics')" /></div>
     </div>
 
-    <x-form.select name="type" :label="__('Type')" :options="SubjectType::options()" :placeholder="null" required
+    <x-form.select name="type" :label="__('Type')" :options="SubjectType::options()" :placeholder="false" required
                    :hint="__('Optional subjects are taken by some students only.')" />
 
     <x-form.textarea name="description" :label="__('Description')" rows="2" maxlength="1000" wrapper="mb-0" />

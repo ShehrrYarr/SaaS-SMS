@@ -28,8 +28,9 @@ $setup = computed(fn () => [
     ['label' => __('Create classes and sections'), 'done' => SchoolClass::exists(), 'route' => 'admin.classes.index'],
     ['label' => __('Add subjects'), 'done' => Subject::exists(), 'route' => 'admin.subjects.index'],
     ['label' => __('Allocate subjects to classes'), 'done' => SubjectClass::exists(), 'route' => 'admin.subjects.allocation'],
-    ['label' => __('Add staff'), 'done' => StaffProfile::exists()],
-    ['label' => __('Admit students'), 'done' => StudentProfile::exists()],
+    ['label' => __('Add staff'), 'done' => StaffProfile::exists(), 'route' => 'admin.staff.index'],
+    ['label' => __('Assign class teachers'), 'done' => App\Models\Section::query()->whereNotNull('class_teacher_id')->exists(), 'route' => 'admin.classes.index'],
+    ['label' => __('Admit students'), 'done' => StudentProfile::exists(), 'route' => 'admin.students.index'],
 ]);
 
 ?>

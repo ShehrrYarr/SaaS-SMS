@@ -2,11 +2,9 @@
 
 namespace App\Services\Schools;
 
-use App\Enums\RecordStatus;
 use App\Enums\SchoolStatus;
 use App\Enums\UserStatus;
 use App\Enums\UserType;
-use App\Models\Campus;
 use App\Models\School;
 use App\Models\User;
 use App\Services\Access\SyncDefaultSchoolRoles;
@@ -19,19 +17,20 @@ use SensitiveParameter;
  *
  *  1. the school record (plan, trial, locale settings);
  *  2. its built-in roles (config/access.php);
- *  3. a Main Campus;
+ *  3. its starting records (SeedSchoolDefaults: Main Campus, leave types);
  *  4. the first School Admin account, which must change its password at
  *     first sign-in;
  *  5. optionally, the first subscription payment.
  *
- * Later phases add their per-school defaults (leave types, grade scales,
- * finance categories) to seedDefaults().
+ * Later phases add their per-school defaults (grade scales, finance
+ * categories) to SeedSchoolDefaults.
  */
 class ProvisionSchool
 {
     public function __construct(
         private readonly SyncDefaultSchoolRoles $syncRoles,
         private readonly SubscriptionManager $subscriptions,
+        private readonly SeedSchoolDefaults $defaults,
     ) {}
 
     /**
@@ -50,7 +49,7 @@ class ProvisionSchool
             $this->syncRoles->handle($record);
 
             $user = tenancy()->run($record, function (School $record) use ($admin, $password) {
-                $this->seedDefaults($record);
+                $this->defaults->handle($record);
 
                 $user = User::query()->create([
                     ...$admin,
@@ -75,17 +74,5 @@ class ProvisionSchool
 
             return new ProvisionedSchool($record->refresh(), $user, $password);
         });
-    }
-
-    /**
-     * Records every new school starts with. Runs inside the school's context.
-     */
-    private function seedDefaults(School $school): void
-    {
-        Campus::query()->create([
-            'name' => __('Main Campus'),
-            'is_main' => true,
-            'status' => RecordStatus::Active,
-        ]);
     }
 }

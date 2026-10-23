@@ -165,7 +165,7 @@ $save = function (NoticePublisher $publisher) {
 
     <div class="row">
         <div class="col-sm-6">
-            <x-form.select name="target_audience" :label="__('Who is it for?')" :options="NoticeAudience::options()" :placeholder="null" required live />
+            <x-form.select name="target_audience" :label="__('Who is it for?')" :options="NoticeAudience::options()" :placeholder="false" required live />
         </div>
         @if (in_array($target_audience, [NoticeAudience::Students->value, NoticeAudience::Parents->value], true))
             <div class="col-sm-6">

@@ -298,3 +298,26 @@ than editing the Herozi partials, so the theme can be updated cleanly.
     line-height: 1.7;
     overflow-wrap: anywhere;
 }
+
+// Multi-line text typed into a textarea (addresses, notes).
+.text-pre-line {
+    white-space: pre-line;
+}
+
+// Monthly attendance sheet: keep the student column in view while scrolling days.
+.attendance-sheet {
+    font-size: 0.8125rem;
+
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        background-color: var(--bs-body-bg);
+        box-shadow: inset -1px 0 0 var(--bs-border-color);
+    }
+
+    td,
+    th {
+        min-width: 1.75rem;
+    }
+}

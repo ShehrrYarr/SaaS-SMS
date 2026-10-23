@@ -74,6 +74,12 @@ return [
         'time_format' => 'h:i A',
         'week_starts_on' => 1, // ISO day: 1 = Monday
 
+        'attendance' => [
+            // ISO weekdays the school is closed, comma-separated (1 = Monday ... 7 = Sunday).
+            // A string, so a school's choice replaces the default instead of merging with it.
+            'weekly_off' => '7',
+        ],
+
         'numbering' => [
             'admission_prefix' => 'ADM-',
             'employee_prefix' => 'EMP-',

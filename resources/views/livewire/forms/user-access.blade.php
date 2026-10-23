@@ -107,6 +107,6 @@ $save = function () {
         </div>
     </fieldset>
 
-    <x-form.select name="status" :label="__('Status')" :options="UserStatus::options()" :placeholder="null" required wrapper="mb-0"
+    <x-form.select name="status" :label="__('Status')" :options="UserStatus::options()" :placeholder="false" required wrapper="mb-0"
                    :hint="__('Inactive and suspended accounts are signed out and can\'t sign in.')" />
 </x-modal.form>

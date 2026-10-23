@@ -31,6 +31,8 @@ state([
     'logo' => null, 'remove_logo' => false,
     // Regional
     'currency_code' => '', 'currency_symbol' => '', 'timezone' => '', 'date_format' => '', 'time_format' => '', 'week_starts_on' => '1',
+    // Attendance (ISO weekdays, as strings for the checkboxes)
+    'weekly_off' => [],
     // Numbering
     'admission_prefix' => '', 'employee_prefix' => '', 'invoice_prefix' => '', 'receipt_prefix' => '',
     // Fees
@@ -52,6 +54,7 @@ mount(function () {
         'date_format' => $school->setting('date_format'),
         'time_format' => $school->setting('time_format'),
         'week_starts_on' => (string) $school->setting('week_starts_on'),
+        'weekly_off' => array_map('strval', app(\App\Services\Attendance\SchoolCalendar::class)->weeklyOff()),
         'admission_prefix' => $school->setting('numbering.admission_prefix'),
         'employee_prefix' => $school->setting('numbering.employee_prefix'),
         'invoice_prefix' => $school->setting('numbering.invoice_prefix'),
@@ -85,6 +88,10 @@ $ruleGroups = protect(fn () => [
         'date_format' => ['required', Rule::in(LocaleOptions::DATE_FORMATS)],
         'time_format' => ['required', Rule::in(LocaleOptions::TIME_FORMATS)],
         'week_starts_on' => ['required', Rule::in(array_map('strval', array_keys(LocaleOptions::weekStarts())))],
+    ],
+    'attendance' => [
+        'weekly_off' => ['array', 'max:6'],
+        'weekly_off.*' => ['integer', 'between:1,7'],
     ],
     'numbering' => [
         'admission_prefix' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9\/_-]*$/'],
@@ -127,6 +134,8 @@ $save = function () {
     $school = tenant();
     $blank = fn ($value) => $value === '' ? null : $value;
 
+    $weeklyOff = collect($data['weekly_off'])->map(fn ($day) => (int) $day)->unique()->sort()->implode(',');
+
     $attributes = [
         'name' => $data['name'],
         'email' => $blank($data['email']),
@@ -141,6 +150,7 @@ $save = function () {
             'date_format' => $data['date_format'],
             'time_format' => $data['time_format'],
             'week_starts_on' => (int) $data['week_starts_on'],
+            'attendance' => ['weekly_off' => $weeklyOff],
             'numbering' => [
                 'admission_prefix' => (string) $data['admission_prefix'],
                 'employee_prefix' => (string) $data['employee_prefix'],
@@ -191,12 +201,14 @@ $save = function () {
     $tabs = [
         'general' => [__('School profile'), 'ri-building-4-line'],
         'regional' => [__('Regional'), 'ri-global-line'],
+        'attendance' => [__('Attendance'), 'ri-calendar-check-line'],
         'numbering' => [__('Numbering'), 'ri-hashtag'],
         'fees' => [__('Fee options'), 'ri-hand-coin-line'],
     ];
     $tabErrors = [
         'general' => ['name', 'email', 'phone', 'address', 'city', 'country', 'logo'],
         'regional' => ['currency_code', 'currency_symbol', 'timezone', 'date_format', 'time_format', 'week_starts_on'],
+        'attendance' => ['weekly_off', 'weekly_off.0'],
         'numbering' => ['admission_prefix', 'employee_prefix', 'invoice_prefix', 'receipt_prefix'],
         'fees' => ['late_fee_type', 'late_fee_amount', 'late_fee_grace_days', 'late_fee_max_amount'],
     ];
@@ -271,13 +283,28 @@ $save = function () {
                             <h5 class="mb-1">{{ __('Regional') }}</h5>
                             <p class="text-muted mb-4">{{ __('How money, dates and times are shown across the school.') }}</p>
                             <div class="row">
-                                <div class="col-sm-6"><x-form.select name="currency_code" :label="__('Currency')" :options="LocaleOptions::currencies()" :placeholder="null" required /></div>
+                                <div class="col-sm-6"><x-form.select name="currency_code" :label="__('Currency')" :options="LocaleOptions::currencies()" :placeholder="false" required /></div>
                                 <div class="col-sm-6"><x-form.input name="currency_symbol" :label="__('Currency symbol')" required maxlength="8" /></div>
-                                <div class="col-sm-6"><x-form.select name="timezone" :label="__('Timezone')" :options="LocaleOptions::timezones()" :placeholder="null" required /></div>
-                                <div class="col-sm-6"><x-form.select name="week_starts_on" :label="__('Week starts on')" :options="LocaleOptions::weekStarts()" :placeholder="null" required /></div>
-                                <div class="col-sm-6"><x-form.select name="date_format" :label="__('Date format')" :options="LocaleOptions::dateFormats()" :placeholder="null" required wrapper="mb-0" /></div>
-                                <div class="col-sm-6"><x-form.select name="time_format" :label="__('Time format')" :options="LocaleOptions::timeFormats()" :placeholder="null" required wrapper="mb-0" /></div>
+                                <div class="col-sm-6"><x-form.select name="timezone" :label="__('Timezone')" :options="LocaleOptions::timezones()" :placeholder="false" required /></div>
+                                <div class="col-sm-6"><x-form.select name="week_starts_on" :label="__('Week starts on')" :options="LocaleOptions::weekStarts()" :placeholder="false" required /></div>
+                                <div class="col-sm-6"><x-form.select name="date_format" :label="__('Date format')" :options="LocaleOptions::dateFormats()" :placeholder="false" required wrapper="mb-0" /></div>
+                                <div class="col-sm-6"><x-form.select name="time_format" :label="__('Time format')" :options="LocaleOptions::timeFormats()" :placeholder="false" required wrapper="mb-0" /></div>
                             </div>
+                        @elseif ($tab === 'attendance')
+                            <h5 class="mb-1">{{ __('Attendance') }}</h5>
+                            <p class="text-muted mb-4">{{ __('Weekly off days aren\'t counted as school days in leave requests and attendance reports.') }}</p>
+
+                            <fieldset>
+                                <legend class="form-label fs-14">{{ __('Weekly off days') }}</legend>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (LocaleOptions::weekdays() as $day => $dayName)
+                                        <input type="checkbox" class="btn-check" id="weekly-off-{{ $day }}" value="{{ $day }}" wire:model="weekly_off" autocomplete="off">
+                                        <label class="btn btn-sm btn-outline-primary" for="weekly-off-{{ $day }}">{{ $dayName }}</label>
+                                    @endforeach
+                                </div>
+                                @error('weekly_off') <div class="text-danger fs-13 mt-1">{{ $message }}</div> @enderror
+                                <div class="form-text">{{ __('At least one day must be a school day.') }}</div>
+                            </fieldset>
                         @elseif ($tab === 'numbering')
                             <h5 class="mb-1">{{ __('Numbering') }}</h5>
                             <p class="text-muted mb-4">{{ __('Prefixes for numbers the system gives out. Existing numbers don\'t change.') }}</p>
@@ -301,7 +328,7 @@ $save = function () {
 
                             @if ($late_fee_enabled)
                                 <div class="row">
-                                    <div class="col-sm-6"><x-form.select name="late_fee_type" :label="__('Charged as')" :options="LateFeeType::options()" :placeholder="null" required live /></div>
+                                    <div class="col-sm-6"><x-form.select name="late_fee_type" :label="__('Charged as')" :options="LateFeeType::options()" :placeholder="false" required live /></div>
                                     <div class="col-sm-6">
                                         <x-form.input name="late_fee_amount" type="number" step="0.01" min="0" required
                                                       :label="match ($late_fee_type) { 'percentage' => __('Percentage of the invoice'), 'daily' => __('Amount per day (:symbol)', ['symbol' => $symbol]), default => __('Amount (:symbol)', ['symbol' => $symbol]) }" />

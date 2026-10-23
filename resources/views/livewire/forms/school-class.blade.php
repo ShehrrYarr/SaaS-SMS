@@ -9,8 +9,10 @@
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\Campus;
 use App\Models\Classroom;
+use App\Enums\UserStatus;
 use App\Models\SchoolClass;
 use App\Models\Section;
+use App\Models\StaffProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +25,7 @@ state(['schoolClass' => null])->locked();
 
 state([
     'campus_id' => '', 'name' => '', 'code' => '', 'numeric_level' => '', 'capacity' => '',
-    // [['id' => ?int, 'name' => 'A', 'capacity' => '', 'classroom_id' => '']]
+    // [['id' => ?int, 'name' => 'A', 'capacity' => '', 'classroom_id' => '', 'class_teacher_id' => '']]
     'sections' => [],
     'quickSections' => '',
 ]);
@@ -37,12 +39,21 @@ $classrooms = computed(fn () => Classroom::query()
     ->mapWithKeys(fn (Classroom $room) => [$room->id => $room->room_number.($room->name ? " · {$room->name}" : '')])
     ->all());
 
+// Staff who can be class teacher: active accounts, by name.
+$teachers = computed(fn () => StaffProfile::query()
+    ->with('user')
+    ->whereHas('user', fn ($query) => $query->where('status', UserStatus::Active))
+    ->get()
+    ->sortBy(fn (StaffProfile $staff) => mb_strtolower((string) $staff->user?->name))
+    ->mapWithKeys(fn (StaffProfile $staff) => [$staff->id => $staff->user?->name.($staff->designation ? " · {$staff->designation}" : '')])
+    ->all());
+
 mount(function (?int $schoolClass = null) {
     if (! $schoolClass) {
         $this->authorize('classes.create');
         $this->campus_id = (string) (Campus::main()?->id ?? '');
         $this->numeric_level = (string) (((int) SchoolClass::query()->max('numeric_level')) + 1);
-        $this->sections = [['id' => null, 'name' => 'A', 'capacity' => '', 'classroom_id' => '']];
+        $this->sections = [['id' => null, 'name' => 'A', 'capacity' => '', 'classroom_id' => '', 'class_teacher_id' => '']];
 
         return;
     }
@@ -62,6 +73,7 @@ mount(function (?int $schoolClass = null) {
             'name' => $section->name,
             'capacity' => (string) ($section->capacity ?? ''),
             'classroom_id' => (string) ($section->classroom_id ?? ''),
+            'class_teacher_id' => (string) ($section->class_teacher_id ?? ''),
         ])->all(),
     ]);
 });
@@ -70,7 +82,7 @@ $addSection = function () {
     $used = collect($this->sections)->pluck('name')->map(fn ($name) => strtoupper((string) $name))->all();
     $next = collect(range('A', 'Z'))->first(fn (string $letter) => ! in_array($letter, $used, true)) ?? '';
 
-    $this->sections[] = ['id' => null, 'name' => $next, 'capacity' => '', 'classroom_id' => ''];
+    $this->sections[] = ['id' => null, 'name' => $next, 'capacity' => '', 'classroom_id' => '', 'class_teacher_id' => ''];
 };
 
 // "A, B, C" or "Blue, Green" adds several sections at once.
@@ -82,7 +94,7 @@ $addQuickSections = function () {
         ->filter()
         ->unique(fn ($name) => mb_strtolower($name))
         ->reject(fn ($name) => $existing->contains(mb_strtolower($name)))
-        ->each(fn ($name) => $this->sections[] = ['id' => null, 'name' => mb_substr($name, 0, 30), 'capacity' => '', 'classroom_id' => '']);
+        ->each(fn ($name) => $this->sections[] = ['id' => null, 'name' => mb_substr($name, 0, 30), 'capacity' => '', 'classroom_id' => '', 'class_teacher_id' => '']);
 
     $this->quickSections = '';
 };
@@ -105,12 +117,14 @@ rules(fn () => [
     'sections.*.name' => ['required', 'string', 'max:30', 'distinct:ignore_case'],
     'sections.*.capacity' => ['nullable', 'integer', 'min:1', 'max:1000'],
     'sections.*.classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('school_id', tenant()->id)->whereNull('deleted_at')],
+    'sections.*.class_teacher_id' => ['nullable', Rule::exists('staff_profiles', 'id')->where('school_id', tenant()->id)->whereNull('deleted_at')],
 ])->attributes([
     'campus_id' => __('campus'),
     'numeric_level' => __('level'),
     'sections.*.name' => __('section name'),
     'sections.*.capacity' => __('section capacity'),
     'sections.*.classroom_id' => __('room'),
+    'sections.*.class_teacher_id' => __('class teacher'),
 ])->messages([
     'sections.*.name.distinct' => __('Each section needs a different name.'),
 ]);
@@ -145,7 +159,12 @@ $save = function () {
         }
 
         foreach ($data['sections'] as $row) {
-            $values = ['name' => trim($row['name']), 'capacity' => $blank($row['capacity']), 'classroom_id' => $blank($row['classroom_id'])];
+            $values = [
+                'name' => trim($row['name']),
+                'capacity' => $blank($row['capacity']),
+                'classroom_id' => $blank($row['classroom_id']),
+                'class_teacher_id' => $blank($row['class_teacher_id'] ?? null),
+            ];
 
             if ($row['id'] ?? null) {
                 $class->sections()->whereKey($row['id'])->firstOrFail()->update($values);
@@ -210,6 +229,7 @@ $save = function () {
                             <th scope="col" class="ps-3">{{ __('Name') }}</th>
                             <th scope="col" style="width: 7rem">{{ __('Capacity') }}</th>
                             <th scope="col">{{ __('Room') }}</th>
+                            <th scope="col">{{ __('Class teacher') }}</th>
                             <th scope="col" class="text-end pe-3"><span class="visually-hidden">{{ __('Remove') }}</span></th>
                         </tr>
                     </thead>
@@ -229,6 +249,14 @@ $save = function () {
                                     <select wire:model="sections.{{ $index }}.classroom_id" class="form-select form-select-sm" aria-label="{{ __('Room') }}">
                                         <option value="">{{ __('No fixed room') }}</option>
                                         @foreach ($this->classrooms as $id => $label)
+                                            <option value="{{ $id }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <select wire:model="sections.{{ $index }}.class_teacher_id" class="form-select form-select-sm" aria-label="{{ __('Class teacher') }}">
+                                        <option value="">{{ __('Not assigned') }}</option>
+                                        @foreach ($this->teachers as $id => $label)
                                             <option value="{{ $id }}">{{ $label }}</option>
                                         @endforeach
                                     </select>

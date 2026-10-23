@@ -73,7 +73,7 @@ $save = function () {
     <div class="row">
         <div class="col-sm-5"><x-form.input name="room_number" :label="__('Room number')" required maxlength="30" :placeholder="__('e.g. 101')" /></div>
         <div class="col-sm-7"><x-form.input name="name" :label="__('Name')" maxlength="100" :placeholder="__('e.g. Physics Lab')" /></div>
-        <div class="col-sm-6"><x-form.select name="type" :label="__('Type')" :options="ClassroomType::options()" :placeholder="null" required /></div>
+        <div class="col-sm-6"><x-form.select name="type" :label="__('Type')" :options="ClassroomType::options()" :placeholder="false" required /></div>
         <div class="col-sm-6"><x-form.input name="capacity" type="number" min="1" :label="__('Seats')" /></div>
         <div class="col-sm-6"><x-form.input name="building" :label="__('Building')" maxlength="100" /></div>
         <div class="col-sm-6"><x-form.input name="floor" :label="__('Floor')" maxlength="20" /></div>
