@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The tenant. Platform-level: not itself tenant-scoped.
@@ -82,6 +83,11 @@ class School extends Model
     public function currentAcademicYear(): HasOne
     {
         return $this->hasOne(AcademicYear::class)->where('status', AcademicPeriodStatus::Current);
+    }
+
+    public function logoUrl(): ?string
+    {
+        return $this->logo ? Storage::disk('public')->url($this->logo) : null;
     }
 
     public function isActive(): bool

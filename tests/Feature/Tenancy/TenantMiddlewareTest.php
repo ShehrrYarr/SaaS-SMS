@@ -56,7 +56,7 @@ it('lets a user into their own school', function () {
 it('signs out a user who opens another school', function () {
     $user = makeSchoolUser($this->schoolA);
 
-    $this->actingAs($user)->get('/bravo/_secure')->assertRedirect('/login');
+    $this->actingAs($user)->get('/bravo/_secure')->assertRedirect('/bravo/login');
 
     $this->assertGuest();
 });

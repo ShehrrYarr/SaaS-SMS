@@ -23,13 +23,16 @@ return [
         'view-analytics' => 'View platform analytics',
     ],
 
+    // Order is the order of the portal switcher, and the first portal a user
+    // can enter is where they land after signing in. Self-service portals show
+    // the signed-in student's or parent's own records, so "*" never grants them.
     'portals' => [
-        'admin' => 'School Admin',
-        'teacher' => 'Teacher',
-        'hr' => 'HR',
-        'accounting' => 'Accounting',
-        'student' => 'Student',
-        'parent' => 'Parent',
+        'admin' => ['label' => 'School Admin', 'icon' => 'ri-shield-user-line'],
+        'teacher' => ['label' => 'Teacher', 'icon' => 'ri-presentation-line'],
+        'hr' => ['label' => 'HR', 'icon' => 'ri-team-line'],
+        'accounting' => ['label' => 'Accounting', 'icon' => 'ri-wallet-3-line'],
+        'student' => ['label' => 'Student', 'icon' => 'ri-graduation-cap-line', 'self_service' => true],
+        'parent' => ['label' => 'Parent', 'icon' => 'ri-parent-line', 'self_service' => true],
     ],
 
     'action_labels' => [

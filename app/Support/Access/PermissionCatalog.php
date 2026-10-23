@@ -61,10 +61,23 @@ class PermissionCatalog
     }
 
     /**
+     * Entry permissions of the self-service portals (student, parent).
+     *
+     * @return list<string>
+     */
+    public static function selfServicePortalPermissions(): array
+    {
+        $portals = array_keys(array_filter(config('access.portals'), fn (array $portal) => $portal['self_service'] ?? false));
+
+        return array_map(fn (string $portal) => static::portalPermission($portal), $portals);
+    }
+
+    /**
      * Expand role patterns into concrete school permissions.
      *
-     * "*" is every school permission, and "homework.*" is every action of the
-     * homework module. Unknown names throw, so a typo in config fails loudly.
+     * "*" is every school permission except entry to the self-service portals,
+     * and "homework.*" is every action of the homework module. Unknown names
+     * throw, so a typo in config fails loudly.
      *
      * @param  list<string>  $patterns
      * @return list<string>
@@ -76,7 +89,7 @@ class PermissionCatalog
 
         foreach ($patterns as $pattern) {
             if ($pattern === '*') {
-                return $known;
+                return array_values(array_diff($known, static::selfServicePortalPermissions()));
             }
 
             if (str_ends_with($pattern, '.*')) {

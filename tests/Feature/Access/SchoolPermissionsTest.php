@@ -19,8 +19,15 @@ beforeEach(function () {
 
 it('expands role patterns from the catalog', function () {
     expect(PermissionCatalog::expand(['homework.*']))
-        ->toBe(['homework.view', 'homework.create', 'homework.edit', 'homework.delete', 'homework.grade'])
-        ->and(PermissionCatalog::expand(['*']))->toBe(PermissionCatalog::schoolPermissions());
+        ->toBe(['homework.view', 'homework.create', 'homework.edit', 'homework.delete', 'homework.grade']);
+});
+
+it('grants everything except the self-service portals with "*"', function () {
+    $all = PermissionCatalog::expand(['*']);
+
+    expect($all)->toContain('portal.admin', 'portal.teacher', 'fees.collect')
+        ->not->toContain('portal.student', 'portal.parent')
+        ->and(count($all))->toBe(count(PermissionCatalog::schoolPermissions()) - 2);
 });
 
 it('fails loudly on unknown permissions', function () {

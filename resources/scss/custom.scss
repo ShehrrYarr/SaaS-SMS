@@ -1,0 +1,75 @@
+/*
+SSMS additions on top of the Herozi theme. Keep theme overrides here rather
+than editing the Herozi partials, so the theme can be updated cleanly.
+*/
+
+[x-cloak] {
+    display: none !important;
+}
+
+// Herozi scrolls the sidebar with SimpleBar and tears it down for the
+// small-icon layout. A native thin scrollbar never clips the small-icon
+// flyout menus and needs no re-initialising after wire:navigate.
+:root[data-main-layout="vertical"] .app-sidebar .app-sidebar-menu,
+.small-screen-sidebar .app-sidebar-menu {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+// Brand: school logo or initials, plus name.
+.brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    background-color: var(--bs-primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background-color: var(--bs-body-bg);
+    }
+
+    &.brand-mark-lg {
+        width: 3.5rem;
+        height: 3.5rem;
+        font-size: 1.25rem;
+        border-radius: 0.75rem;
+    }
+}
+
+.brand-name {
+    font-family: var(--bs-font-heading, inherit);
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+    max-width: 10.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Portal switcher in the header.
+.portal-switcher .dropdown-item.active i {
+    color: inherit;
+}
+
+// Stat cards on dashboards.
+.stat-card .stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    font-size: 1.375rem;
+}

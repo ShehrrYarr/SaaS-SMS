@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -95,6 +97,37 @@ class User extends Authenticatable
             array_keys(config('access.portals')),
             fn (string $portal) => $this->canAccessPortal($portal),
         ));
+    }
+
+    /**
+     * Up to two initials for avatar placeholders ("Sara Khan" → "SK").
+     */
+    public function initials(): string
+    {
+        return Str::of($this->name)
+            ->explode(' ')
+            ->filter()
+            ->take(2)
+            ->map(fn (string $part) => Str::upper(Str::substr($part, 0, 1)))
+            ->implode('');
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar ? Storage::disk('public')->url($this->avatar) : null;
+    }
+
+    /**
+     * What to show under the name in the header: the user's role in the
+     * active school, or their account type.
+     */
+    public function roleLabel(): string
+    {
+        if ($this->isSuperAdmin()) {
+            return $this->user_type->label();
+        }
+
+        return $this->getRoleNames()->first() ?? $this->user_type->label();
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\EnsureAccountIsUsable;
 use App\Http\Middleware\EnsureCentralContext;
 use App\Http\Middleware\EnsurePortalAccess;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
@@ -46,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
         // Super admins only ever act in the central console, where they hold
         // every platform permission.
         Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
+
+        Password::defaults(fn () => Password::min(8)->letters()->numbers());
     }
 
     private function registerTenancy(): void
@@ -67,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
             EnsureCentralContext::class,
             EnsureSuperAdmin::class,
             EnsurePortalAccess::class,
+            EnsureAccountIsUsable::class,
         ]);
 
         // TenantContext stores the active tenant in hidden Context, which Laravel

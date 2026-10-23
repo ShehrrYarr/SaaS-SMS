@@ -1,8 +1,16 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
-Route::get('/', function () {
-    return view('index');
-});
-Route::get('{page}', [DashboardController::class, 'index'])->where('page', '[A-Za-z0-9\-]+');
+use Livewire\Volt\Volt;
+
+/*
+|--------------------------------------------------------------------------
+| Platform Routes
+|--------------------------------------------------------------------------
+|
+| The public landing page. The Super Admin console lives in routes/central.php
+| and every school's portals in routes/tenant.php (both loaded from
+| bootstrap/app.php).
+|
+*/
+
+Volt::route('/', 'welcome')->name('home');

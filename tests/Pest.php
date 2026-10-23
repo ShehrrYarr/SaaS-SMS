@@ -31,13 +31,40 @@ function makeSchool(array $attributes = []): School
 
 /**
  * Create a user belonging to $school (created inside that school's context).
+ *
+ * Users are reloaded so database defaults are present: actingAs() marks the
+ * model as "retrieved", and strict mode then rejects any column it never read.
  */
 function makeSchoolUser(School $school, UserType $type = UserType::Staff, array $attributes = []): User
 {
-    return tenancy()->run($school, fn () => User::factory()->type($type)->create($attributes));
+    return tenancy()->run($school, fn () => User::factory()->type($type)->create($attributes)->refresh());
 }
 
-function makeSuperAdmin(): User
+function makeSuperAdmin(array $attributes = []): User
 {
-    return tenancy()->runCentral(fn () => User::factory()->superAdmin()->create());
+    return tenancy()->runCentral(fn () => User::factory()->superAdmin()->create($attributes)->refresh());
+}
+
+/**
+ * Seed the permission catalog and give $school its built-in roles.
+ */
+function seedSchoolRoles(School ...$schools): void
+{
+    test()->seed(Database\Seeders\PermissionCatalogSeeder::class);
+
+    foreach ($schools as $school) {
+        app(App\Services\Access\SyncDefaultSchoolRoles::class)->handle($school);
+    }
+}
+
+/**
+ * A user in $school holding the given built-in role(s).
+ */
+function makeUserWithRole(School $school, UserType $type, string|array $roles, array $attributes = []): User
+{
+    $user = makeSchoolUser($school, $type, $attributes);
+
+    tenancy()->run($school, fn () => $user->assignRole($roles));
+
+    return $user;
 }
