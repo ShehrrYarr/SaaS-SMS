@@ -56,5 +56,9 @@
             </div>
         </div>
     </div>
+
+    @if ($toasts = App\Support\Toast::pending())
+        <div id="flash-toasts" hidden data-toasts="{{ json_encode($toasts) }}"></div>
+    @endif
 </body>
 </html>

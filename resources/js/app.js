@@ -4,9 +4,11 @@ import Swal from 'sweetalert2';
 import 'simplebar';
 import 'simplebar/dist/simplebar.min.css';
 import { boot } from './layout';
+import { bootUi } from './ui';
 
 // Livewire ships Alpine; Bootstrap and SweetAlert2 are exposed for Blade/Alpine snippets.
 window.bootstrap = bootstrap;
 window.Swal = Swal;
 
 boot();
+bootUi();

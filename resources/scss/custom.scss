@@ -63,6 +63,34 @@ than editing the Herozi partials, so the theme can be updated cleanly.
     color: inherit;
 }
 
+// Modal forms wrap header/body/footer in a <form>; keep Bootstrap's
+// scrollable-body behaviour working through that extra element.
+.modal-content > .modal-form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+}
+
+.modal-dialog-scrollable .modal-form .modal-body {
+    overflow-y: auto;
+}
+
+// Data table footer: keep Livewire's Bootstrap pagination compact.
+.data-table-pagination {
+    nav > .d-flex {
+        gap: 1rem;
+    }
+
+    .pagination {
+        margin-bottom: 0;
+    }
+
+    p.small {
+        margin-bottom: 0;
+    }
+}
+
 // Stat cards on dashboards.
 .stat-card .stat-icon {
     display: inline-flex;

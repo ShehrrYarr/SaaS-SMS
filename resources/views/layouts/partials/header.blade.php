@@ -41,6 +41,8 @@
                     @endif
 
                     @include('layouts.partials.theme-toggle')
+
+                    <livewire:layout.notifications />
                 </div>
 
                 <livewire:layout.user-menu />

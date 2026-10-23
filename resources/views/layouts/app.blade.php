@@ -38,5 +38,7 @@
     </main>
 
     @include('layouts.partials.footer', ['owner' => $school->name])
+
+    @include('layouts.partials.page-end')
 </body>
 </html>

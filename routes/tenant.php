@@ -30,6 +30,10 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
 
             Route::prefix('admin')->name('admin.')->middleware('portal:admin')->group(function () {
                 Volt::route('/', 'tenant.admin.dashboard')->name('dashboard');
+
+                Volt::route('academic-years', 'tenant.admin.academic-years.index')
+                    ->middleware('can:academic-years.view')
+                    ->name('academic-years.index');
             });
 
             Route::prefix('teacher')->name('teacher.')->middleware('portal:teacher')->group(function () {

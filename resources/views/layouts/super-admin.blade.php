@@ -27,5 +27,7 @@
     </main>
 
     @include('layouts.partials.footer', ['owner' => config('app.name')])
+
+    @include('layouts.partials.page-end')
 </body>
 </html>
