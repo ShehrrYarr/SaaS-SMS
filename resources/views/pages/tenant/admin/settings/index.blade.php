@@ -35,6 +35,8 @@ state([
     'weekly_off' => [],
     // Numbering
     'admission_prefix' => '', 'employee_prefix' => '', 'invoice_prefix' => '', 'receipt_prefix' => '',
+    // Payroll
+    'deduct_absences' => true,
     // Fees
     'discounts_enabled' => true, 'sibling_discount_enabled' => false, 'bulk_generation_enabled' => true,
     'late_fee_enabled' => false, 'late_fee_type' => 'fixed', 'late_fee_amount' => '0', 'late_fee_grace_days' => '0', 'late_fee_max_amount' => '',
@@ -59,6 +61,7 @@ mount(function () {
         'employee_prefix' => $school->setting('numbering.employee_prefix'),
         'invoice_prefix' => $school->setting('numbering.invoice_prefix'),
         'receipt_prefix' => $school->setting('numbering.receipt_prefix'),
+        'deduct_absences' => (bool) $school->setting('payroll.deduct_absences'),
         'discounts_enabled' => (bool) $school->setting('fees.discounts_enabled'),
         'sibling_discount_enabled' => (bool) $school->setting('fees.sibling_discount_enabled'),
         'bulk_generation_enabled' => (bool) $school->setting('fees.bulk_generation_enabled'),
@@ -98,6 +101,9 @@ $ruleGroups = protect(fn () => [
         'employee_prefix' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9\/_-]*$/'],
         'invoice_prefix' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9\/_-]*$/'],
         'receipt_prefix' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9\/_-]*$/'],
+    ],
+    'payroll' => [
+        'deduct_absences' => ['boolean'],
     ],
     'fees' => [
         'discounts_enabled' => ['boolean'],
@@ -157,6 +163,9 @@ $save = function () {
                 'invoice_prefix' => (string) $data['invoice_prefix'],
                 'receipt_prefix' => (string) $data['receipt_prefix'],
             ],
+            'payroll' => [
+                'deduct_absences' => (bool) $data['deduct_absences'],
+            ],
             'fees' => [
                 'discounts_enabled' => (bool) $data['discounts_enabled'],
                 'sibling_discount_enabled' => (bool) $data['sibling_discount_enabled'],
@@ -204,6 +213,7 @@ $save = function () {
         'attendance' => [__('Attendance'), 'ri-calendar-check-line'],
         'numbering' => [__('Numbering'), 'ri-hashtag'],
         'fees' => [__('Fee options'), 'ri-hand-coin-line'],
+        'payroll' => [__('Payroll'), 'ri-money-dollar-box-line'],
     ];
     $tabErrors = [
         'general' => ['name', 'email', 'phone', 'address', 'city', 'country', 'logo'],
@@ -211,6 +221,7 @@ $save = function () {
         'attendance' => ['weekly_off', 'weekly_off.0'],
         'numbering' => ['admission_prefix', 'employee_prefix', 'invoice_prefix', 'receipt_prefix'],
         'fees' => ['late_fee_type', 'late_fee_amount', 'late_fee_grace_days', 'late_fee_max_amount'],
+        'payroll' => ['deduct_absences'],
     ];
     $school = tenant();
     $symbol = $currency_symbol ?: $school->setting('currency_symbol');
@@ -314,6 +325,12 @@ $save = function () {
                                 <div class="col-sm-6"><x-form.input name="invoice_prefix" :label="__('Invoices')" maxlength="10" wrapper="mb-0" :hint="__('e.g. :example', ['example' => ($invoice_prefix ?: '').now()->year.'-0001'])" /></div>
                                 <div class="col-sm-6"><x-form.input name="receipt_prefix" :label="__('Receipts')" maxlength="10" wrapper="mb-0" :hint="__('e.g. :example', ['example' => ($receipt_prefix ?: '').now()->year.'-0001'])" /></div>
                             </div>
+                        @elseif ($tab === 'payroll')
+                            <h5 class="mb-1">{{ __('Payroll') }}</h5>
+                            <p class="text-muted mb-4">{{ __('How monthly salary drafts are worked out. Unpaid leave and days before a staff member joined are always deducted.') }}</p>
+
+                            <x-form.switch name="deduct_absences" :label="__('Deduct absent days')" wrapper="mb-0"
+                                           :hint="__('Takes a day\'s pay for each day marked absent in the staff register, and half a day\'s for each half day. Days with nothing marked count as worked.')" />
                         @else
                             <h5 class="mb-1">{{ __('Fee options') }}</h5>
                             <p class="text-muted mb-4">{{ __('Switch fee features on or off for this school. They take effect in the Accounting portal.') }}</p>

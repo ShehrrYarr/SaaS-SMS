@@ -2,6 +2,7 @@
 
 namespace App\Tables;
 
+use App\Support\Billing\Money;
 use BackedEnum;
 use Closure;
 use Illuminate\Contracts\Support\Htmlable;
@@ -142,7 +143,7 @@ class Column
      */
     public function money(): static
     {
-        return $this->format(fn (mixed $value) => blank($value) ? null : (tenant()?->setting('currency_symbol') ?? '').number_format((float) $value, 2))
+        return $this->format(fn (mixed $value) => blank($value) ? null : Money::school($value))
             ->alignEnd();
     }
 

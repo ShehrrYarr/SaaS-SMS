@@ -6,6 +6,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -15,6 +16,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Payment extends TenantModel
 {
     use AuditsChanges, SoftDeletes;
+
+    /** Receiving and voiding are logged with their context by FeeCollection. */
+    protected static $recordEvents = ['deleted'];
 
     protected function casts(): array
     {
@@ -48,6 +52,16 @@ class Payment extends TenantModel
     public function voidedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'voided_by');
+    }
+
+    /**
+     * The income-ledger entry this payment was posted as.
+     *
+     * @return MorphOne<IncomeLedger, $this>
+     */
+    public function income(): MorphOne
+    {
+        return $this->morphOne(IncomeLedger::class, 'source');
     }
 
     public function isVoided(): bool

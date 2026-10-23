@@ -10,6 +10,7 @@ use App\Http\Middleware\EnsureTenantContext;
 use App\Models;
 use App\Models\School;
 use App\Models\User;
+use App\Support\Billing\PlanFeatures;
 use App\Tenancy\TenantContext;
 use App\Tenancy\TenantUserProvider;
 use Illuminate\Database\Eloquent\Model;
@@ -48,6 +49,13 @@ class AppServiceProvider extends ServiceProvider
         // Super admins only ever act in the central console, where they hold
         // every platform permission.
         Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
+
+        // Staff self-service: their own leave, and their salary slips when the
+        // school's plan has payroll. Both need a staff record.
+        Gate::define('apply-own-leave', fn (User $user) => $user->can('leave.apply') && $user->staffProfile()->exists());
+        Gate::define('view-own-payslips', fn (User $user) => tenant() !== null
+            && PlanFeatures::allows(tenant()->plan, 'payroll.view')
+            && $user->staffProfile()->exists());
 
         Password::defaults(fn () => Password::min(8)->letters()->numbers());
     }

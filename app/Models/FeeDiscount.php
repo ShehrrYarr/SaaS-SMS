@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Enums\AdjustmentType;
+use App\Models\Concerns\AuditsChanges;
+use App\Support\Billing\Money;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -12,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class FeeDiscount extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
 
     protected function casts(): array
     {
@@ -32,6 +35,24 @@ class FeeDiscount extends TenantModel
     public function feeStructure(): BelongsTo
     {
         return $this->belongsTo(FeeStructure::class);
+    }
+
+    /**
+     * "10%" or "$500".
+     */
+    public function valueLabel(): string
+    {
+        return $this->type === AdjustmentType::Percentage
+            ? rtrim(rtrim(number_format((float) $this->value, 2, '.', ''), '0'), '.').'%'
+            : Money::school($this->value);
+    }
+
+    /**
+     * @return HasMany<StudentFeeDiscount, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(StudentFeeDiscount::class);
     }
 
     /**

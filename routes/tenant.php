@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\Tenant\FeeDocumentController;
 use App\Http\Controllers\Tenant\HomeController;
 use App\Http\Controllers\Tenant\LeaveAttachmentController;
+use App\Http\Controllers\Tenant\LedgerProofController;
 use App\Http\Controllers\Tenant\NoticeAttachmentController;
+use App\Http\Controllers\Tenant\PayslipController;
 use App\Http\Controllers\Tenant\ReportCardController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -36,6 +39,12 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('staff/{staff}/edit', 'tenant.staff.form')->middleware('can:staff.edit')->whereNumber('staff')->name('staff.edit');
             };
 
+            // A staff member's own leave and salary slips, inside whichever staff portal they use.
+            $selfServiceRoutes = function () {
+                Volt::route('my/leave', 'tenant.me.leave')->middleware('can:leave.apply')->name('my-leave');
+                Volt::route('my/payslips', 'tenant.me.payslips')->middleware('can:view-own-payslips')->name('my-payslips');
+            };
+
             Route::get('/', HomeController::class)->name('tenant.home');
 
             Volt::route('password/change', 'tenant.auth.change-password')->name('tenant.password.change');
@@ -46,7 +55,13 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
             Route::get('notices/{notice}/attachment', NoticeAttachmentController::class)->whereNumber('notice')->name('tenant.notices.attachment');
             Route::get('leave/{leaveRequest}/attachment', LeaveAttachmentController::class)->whereNumber('leaveRequest')->name('tenant.leave.attachment');
 
-            Route::prefix('admin')->name('admin.')->middleware('portal:admin')->group(function () use ($staffRoutes) {
+            // Salary slips for HR and for the staff member themself (checked in the controller).
+            Route::controller(PayslipController::class)->whereNumber('record')->group(function () {
+                Route::get('payslips/{record}', 'show')->name('tenant.payslips.show');
+                Route::get('payslips/{record}/pdf', 'pdf')->name('tenant.payslips.pdf');
+            });
+
+            Route::prefix('admin')->name('admin.')->middleware('portal:admin')->group(function () use ($staffRoutes, $selfServiceRoutes) {
                 Volt::route('/', 'tenant.admin.dashboard')->name('dashboard');
 
                 // Academic setup
@@ -90,26 +105,60 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('users', 'tenant.admin.users.index')->middleware('can:users.view')->name('users.index');
                 Volt::route('activity-log', 'tenant.admin.activity-log.index')->middleware('can:activity-log.view')->name('activity-log.index');
                 Volt::route('settings', 'tenant.admin.settings.index')->middleware('can:settings.view')->name('settings.index');
+
+                $selfServiceRoutes();
             });
 
-            Route::prefix('teacher')->name('teacher.')->middleware('portal:teacher')->group(function () {
+            Route::prefix('teacher')->name('teacher.')->middleware('portal:teacher')->group(function () use ($selfServiceRoutes) {
                 Volt::route('/', 'tenant.teacher.dashboard')->name('dashboard');
                 Volt::route('classes', 'tenant.teacher.classes.index')->name('classes.index');
                 Volt::route('attendance', 'tenant.teacher.attendance.index')->middleware('can:attendance.mark')->name('attendance.index');
                 Volt::route('attendance/report', 'tenant.attendance.report')->middleware('can:attendance.view')->name('attendance.report');
                 Volt::route('student-leave', 'tenant.teacher.student-leave.index')->middleware('can:student-leave.view')->name('student-leave.index');
                 Volt::route('gradebook', 'tenant.teacher.gradebook.index')->middleware('can:marks.edit')->name('gradebook.index');
+                $selfServiceRoutes();
             });
 
-            Route::prefix('hr')->name('hr.')->middleware('portal:hr')->group(function () use ($staffRoutes) {
+            Route::prefix('hr')->name('hr.')->middleware('portal:hr')->group(function () use ($staffRoutes, $selfServiceRoutes) {
                 Volt::route('/', 'tenant.hr.dashboard')->name('dashboard');
                 $staffRoutes();
                 Volt::route('attendance', 'tenant.hr.attendance.index')->middleware('can:staff-attendance.view')->name('attendance.index');
+                Volt::route('leave', 'tenant.hr.leave.index')->middleware('can:leave.view')->name('leave.index');
+                Volt::route('leave/balances', 'tenant.hr.leave.balances')->middleware('can:leave.view')->name('leave.balances');
                 Volt::route('leave-types', 'tenant.hr.leave-types.index')->middleware('can:leave.manage')->name('leave-types.index');
+                Volt::route('payroll', 'tenant.hr.payroll.index')->middleware('can:payroll.view')->name('payroll.index');
+                Volt::route('payslips', 'tenant.hr.payslips.index')->middleware('can:payroll.view')->name('payslips.index');
+                $selfServiceRoutes();
             });
 
-            Route::prefix('accounting')->name('accounting.')->middleware('portal:accounting')->group(function () {
+            Route::prefix('accounting')->name('accounting.')->middleware('portal:accounting')->group(function () use ($selfServiceRoutes) {
                 Volt::route('/', 'tenant.accounting.dashboard')->name('dashboard');
+
+                // Fees
+                Volt::route('collect', 'tenant.accounting.collect')->middleware('can:fees.collect')->name('collect');
+                Volt::route('invoices', 'tenant.accounting.invoices.index')->middleware('can:invoices.view')->name('invoices.index');
+                Volt::route('invoices/{invoice}', 'tenant.accounting.invoices.show')->middleware('can:invoices.view')->whereNumber('invoice')->name('invoices.show');
+                Volt::route('invoice-batches', 'tenant.accounting.invoice-batches.index')->middleware('can:invoices.generate')->name('invoice-batches.index');
+                Volt::route('payments', 'tenant.accounting.payments.index')->middleware('can:fees.view')->name('payments.index');
+                Route::controller(FeeDocumentController::class)->whereNumber(['invoice', 'payment'])->group(function () {
+                    Route::get('invoices/{invoice}/print', 'invoice')->name('invoices.document');
+                    Route::get('invoices/{invoice}/pdf', 'invoicePdf')->name('invoices.pdf');
+                    Route::get('receipts/{payment}', 'receipt')->name('receipts.document');
+                    Route::get('receipts/{payment}/pdf', 'receiptPdf')->name('receipts.pdf');
+                });
+
+                // Fee setup
+                Volt::route('fee-structures', 'tenant.accounting.fee-structures.index')->middleware('can:fee-structures.view')->name('fee-structures.index');
+                Volt::route('discounts', 'tenant.accounting.discounts.index')->middleware('can:fee-discounts.view')->name('discounts.index');
+
+                // Ledger
+                Volt::route('expenses', 'tenant.accounting.expenses.index')->middleware('can:expenses.view')->name('expenses.index');
+                Volt::route('income', 'tenant.accounting.income.index')->middleware('can:income.view')->name('income.index');
+                Volt::route('categories', 'tenant.accounting.categories.index')->name('categories.index');
+                Route::get('ledger/{type}/{entry}/proof', LedgerProofController::class)->whereIn('type', ['income', 'expense'])->whereNumber('entry')->name('ledger.proof');
+                Volt::route('reports', 'tenant.accounting.reports.index')->middleware('can:finance-reports.view')->name('reports.index');
+
+                $selfServiceRoutes();
             });
 
             Route::prefix('student')->name('student.')->middleware('portal:student')->group(function () {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
+use App\Models\StaffProfile;
 use App\Models\StudentProfile;
 use App\Services\Leave\StudentLeave;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class LeaveAttachmentController extends Controller
         $allowed = $record->requested_by === $user->id
             || ($record->applicant instanceof StudentProfile && $record->applicant->parents()->where('parent_profiles.user_id', $user->id)->exists())
             || ($record->applicant instanceof StudentProfile && $leave->canReview($user, $record))
+            || ($record->applicant instanceof StaffProfile && ($record->applicant->user_id === $user->id || $user->can('leave.view')))
             || $user->can('leave.manage');
 
         abort_unless($record->attachment && $allowed, 404);

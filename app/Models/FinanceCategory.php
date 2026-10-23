@@ -3,12 +3,23 @@
 namespace App\Models;
 
 use App\Enums\FinanceCategoryType;
+use App\Models\Concerns\AuditsChanges;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * An income or expense heading. System categories (fee collection,
+ * salaries) receive automatic postings, so they can be renamed but not
+ * removed.
+ */
 class FinanceCategory extends TenantModel
 {
-    use SoftDeletes;
+    use AuditsChanges, SoftDeletes;
+
+    public const FEES = 'fees';
+
+    public const SALARIES = 'salaries';
 
     protected function casts(): array
     {
@@ -16,6 +27,21 @@ class FinanceCategory extends TenantModel
             'type' => FinanceCategoryType::class,
             'is_active' => 'boolean',
         ];
+    }
+
+    public function isSystem(): bool
+    {
+        return $this->system_key !== null;
+    }
+
+    /**
+     * Active categories of one type, by name.
+     *
+     * @param  Builder<FinanceCategory>  $query
+     */
+    public function scopeOfType(Builder $query, FinanceCategoryType $type): void
+    {
+        $query->where('type', $type)->where('is_active', true)->orderBy('name');
     }
 
     /**

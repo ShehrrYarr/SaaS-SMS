@@ -5,8 +5,12 @@ namespace App\Support\Billing;
 use Illuminate\Support\Number;
 
 /**
- * Formats SaaS billing amounts (plan prices, subscription payments), which
- * are always in the platform currency of config/plans.php.
+ * Money formatting.
+ *
+ *  - platform(): SaaS billing amounts (plan prices, subscription payments),
+ *    always in the platform currency of config/plans.php;
+ *  - school(): a school's own amounts (fees, expenses, salaries), with the
+ *    currency symbol from its settings.
  */
 class Money
 {
@@ -25,5 +29,26 @@ class Money
     public static function currency(): string
     {
         return strtoupper((string) config('plans.currency', 'USD'));
+    }
+
+    /**
+     * "$1,250.00" in the active school's currency symbol; negative amounts
+     * as "-$20.00".
+     */
+    public static function school(float|int|string|null $amount): string
+    {
+        $amount = round((float) ($amount ?? 0), 2);
+        $symbol = (string) (tenant()?->setting('currency_symbol') ?? '');
+
+        return ($amount < 0 ? '-' : '').$symbol.number_format(abs($amount), 2);
+    }
+
+    /**
+     * An amount for a form field: "1500.00" → "1500", "12.50" → "12.5",
+     * null → "".
+     */
+    public static function input(float|int|string|null $amount): string
+    {
+        return $amount === null || $amount === '' ? '' : rtrim(rtrim(number_format((float) $amount, 2, '.', ''), '0'), '.');
     }
 }

@@ -26,6 +26,22 @@ class StudentFeeDiscount extends Pivot
     }
 
     /**
+     * @return BelongsTo<StudentProfile, $this>
+     */
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(StudentProfile::class, 'student_profile_id');
+    }
+
+    /**
+     * @return BelongsTo<FeeDiscount, $this>
+     */
+    public function discount(): BelongsTo
+    {
+        return $this->belongsTo(FeeDiscount::class, 'fee_discount_id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function approvedBy(): BelongsTo

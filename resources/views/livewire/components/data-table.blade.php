@@ -263,7 +263,7 @@ $runBulkAction = function (string $name) {
                                         @continue(! $action->isAllowed($user, $row))
 
                                         @if ($action->isLink())
-                                            <a href="{{ $action->urlFor($row) }}" wire:navigate class="btn btn-subtle-{{ $action->color }} icon-btn-sm" title="{{ $action->label }}" aria-label="{{ $action->label }}">
+                                            <a href="{{ $action->urlFor($row) }}" @if ($action->newTab) target="_blank" rel="noopener" @else wire:navigate @endif class="btn btn-subtle-{{ $action->color }} icon-btn-sm" title="{{ $action->label }}" aria-label="{{ $action->label }}">
                                                 <i class="{{ $action->icon }}"></i>
                                             </a>
                                             @continue

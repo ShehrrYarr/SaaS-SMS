@@ -82,6 +82,9 @@ return [
         ['label' => 'Reports', 'icon' => 'ri-bar-chart-box-line', 'route' => 'admin.reports.index', 'can' => 'reports.view'],
         ['label' => 'Activity Log', 'icon' => 'ri-history-line', 'route' => 'admin.activity-log.index', 'can' => 'activity-log.view'],
         ['label' => 'School Settings', 'icon' => 'ri-settings-3-line', 'route' => 'admin.settings.index', 'can' => 'settings.view'],
+        ['heading' => 'Me'],
+        ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'admin.my-leave', 'can' => 'apply-own-leave'],
+        ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'admin.my-payslips', 'can' => 'view-own-payslips'],
     ],
 
     'teacher' => [
@@ -96,6 +99,9 @@ return [
         ['label' => 'Student Leave', 'icon' => 'ri-calendar-close-line', 'route' => 'teacher.student-leave.index', 'can' => 'student-leave.view'],
         ['label' => 'Timetable', 'icon' => 'ri-time-line', 'route' => 'teacher.timetable', 'can' => 'timetable.view'],
         ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
+        ['heading' => 'Me'],
+        ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'teacher.my-leave', 'can' => 'apply-own-leave'],
+        ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'teacher.my-payslips', 'can' => 'view-own-payslips'],
     ],
 
     'hr' => [
@@ -106,6 +112,7 @@ return [
         ['label' => 'Staff Attendance', 'icon' => 'ri-calendar-check-line', 'route' => 'hr.attendance.index', 'can' => 'staff-attendance.view'],
         ['label' => 'Leave', 'icon' => 'ri-calendar-close-line', 'children' => [
             ['label' => 'Leave Requests', 'route' => 'hr.leave.index', 'can' => 'leave.view'],
+            ['label' => 'Leave Balances', 'route' => 'hr.leave.balances', 'can' => 'leave.view'],
             ['label' => 'Leave Types', 'route' => 'hr.leave-types.index', 'can' => 'leave.manage'],
         ]],
         ['heading' => 'Payroll'],
@@ -113,6 +120,9 @@ return [
         ['label' => 'Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'hr.payslips.index', 'can' => 'payroll.view'],
         ['heading' => 'Communication'],
         ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
+        ['heading' => 'Me'],
+        ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'hr.my-leave', 'can' => 'apply-own-leave'],
+        ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'hr.my-payslips', 'can' => 'view-own-payslips'],
     ],
 
     'accounting' => [
@@ -132,9 +142,13 @@ return [
         ['heading' => 'Ledger'],
         ['label' => 'Expenses', 'icon' => 'ri-shopping-bag-3-line', 'route' => 'accounting.expenses.index', 'can' => 'expenses.view'],
         ['label' => 'Income', 'icon' => 'ri-funds-line', 'route' => 'accounting.income.index', 'can' => 'income.view'],
+        ['label' => 'Categories', 'icon' => 'ri-price-tag-3-line', 'route' => 'accounting.categories.index', 'can' => 'expenses.view'],
         ['label' => 'Reports', 'icon' => 'ri-bar-chart-box-line', 'route' => 'accounting.reports.index', 'can' => 'finance-reports.view'],
         ['heading' => 'Communication'],
         ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
+        ['heading' => 'Me'],
+        ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'accounting.my-leave', 'can' => 'apply-own-leave'],
+        ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'accounting.my-payslips', 'can' => 'view-own-payslips'],
     ],
 
     'student' => [

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AdjustmentType;
+use App\Models\Concerns\AuditsChanges;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SiblingDiscountRule extends TenantModel
 {
+    use AuditsChanges;
+
     protected function casts(): array
     {
         return [

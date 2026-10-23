@@ -24,6 +24,8 @@ class Action
 
     public ?string $confirmTitle = null;
 
+    public bool $newTab = false;
+
     private ?Closure $modalParams = null;
 
     private ?Closure $url = null;
@@ -97,13 +99,15 @@ class Action
     }
 
     /**
-     * Link to another page (opened with wire:navigate).
+     * Link to another page (opened with wire:navigate), or to a document
+     * such as a PDF in a new tab.
      *
      * @param  Closure(Model): string  $url
      */
-    public function url(Closure $url): static
+    public function url(Closure $url, bool $newTab = false): static
     {
         $this->url = $url;
+        $this->newTab = $newTab;
 
         return $this;
     }

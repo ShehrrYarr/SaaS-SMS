@@ -2,9 +2,11 @@
 
 namespace App\Services\Schools;
 
+use App\Enums\FinanceCategoryType;
 use App\Enums\LeaveAppliesTo;
 use App\Enums\RecordStatus;
 use App\Models\Campus;
+use App\Models\FinanceCategory;
 use App\Models\GradeScale;
 use App\Models\LeaveType;
 use App\Models\School;
@@ -39,6 +41,24 @@ class SeedSchoolDefaults
         'F' => [0, 0.0, 'Fail'],
     ];
 
+    /**
+     * Income and expense headings: name => [type, system key]. Fee payments
+     * and paid salaries post to the system ones automatically.
+     */
+    public const FINANCE_CATEGORIES = [
+        'Fee Collection' => [FinanceCategoryType::Income, FinanceCategory::FEES],
+        'Donations' => [FinanceCategoryType::Income, null],
+        'Other Income' => [FinanceCategoryType::Income, null],
+        'Salaries' => [FinanceCategoryType::Expense, FinanceCategory::SALARIES],
+        'Utilities' => [FinanceCategoryType::Expense, null],
+        'Rent' => [FinanceCategoryType::Expense, null],
+        'Maintenance' => [FinanceCategoryType::Expense, null],
+        'Stationery & Supplies' => [FinanceCategoryType::Expense, null],
+        'Transport' => [FinanceCategoryType::Expense, null],
+        'Events' => [FinanceCategoryType::Expense, null],
+        'Other Expenses' => [FinanceCategoryType::Expense, null],
+    ];
+
     public function handle(School $school): void
     {
         tenancy()->run($school, function () {
@@ -63,7 +83,35 @@ class SeedSchoolDefaults
             if (GradeScale::query()->withTrashed()->doesntExist()) {
                 $this->seedGradeScale();
             }
+
+            $this->seedFinanceCategories();
         });
+    }
+
+    /**
+     * The defaults on a school's first run; afterwards only missing system
+     * categories are put back, since the ledger depends on them.
+     */
+    private function seedFinanceCategories(): void
+    {
+        $fresh = FinanceCategory::query()->withTrashed()->doesntExist();
+
+        foreach (self::FINANCE_CATEGORIES as $name => [$type, $key]) {
+            if ($key !== null) {
+                $category = FinanceCategory::query()->withTrashed()->where('system_key', $key)->first();
+
+                if ($category?->trashed()) {
+                    $category->restore();
+                }
+
+                $category ?? FinanceCategory::query()->withTrashed()->updateOrCreate(
+                    ['type' => $type, 'name' => __($name)],
+                    ['system_key' => $key, 'is_active' => true, 'deleted_at' => null],
+                );
+            } elseif ($fresh) {
+                FinanceCategory::query()->create(['type' => $type, 'name' => __($name), 'is_active' => true]);
+            }
+        }
     }
 
     private function seedGradeScale(): void

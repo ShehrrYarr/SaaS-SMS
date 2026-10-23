@@ -5,14 +5,26 @@ namespace App\Models;
 use App\Enums\InvoiceStatus;
 use App\Models\Concerns\AuditsChanges;
 use Brick\Math\BigDecimal;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * A bill for one student. total = subtotal - discount + late fee; the status
+ * follows the balance and the due date (see App\Services\Fees\Invoices).
+ */
 class Invoice extends TenantModel
 {
     use AuditsChanges, SoftDeletes;
+
+    /** Raising, changing, cancelling and paying are logged with their context by the fee services. */
+    protected static $recordEvents = ['deleted'];
+
+    /** Statuses that still expect money. */
+    public const OPEN = [InvoiceStatus::Unpaid, InvoiceStatus::Partial, InvoiceStatus::Overdue];
 
     protected function casts(): array
     {
@@ -22,6 +34,8 @@ class Invoice extends TenantModel
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'late_fee_amount' => 'decimal:2',
+            'late_fee_waived_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'total_amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'status' => InvoiceStatus::class,
@@ -34,6 +48,37 @@ class Invoice extends TenantModel
     protected function balance(): Attribute
     {
         return Attribute::get(fn () => (string) BigDecimal::of($this->total_amount)->minus($this->paid_amount)->toScale(2));
+    }
+
+    public function balanceAmount(): float
+    {
+        return round((float) $this->total_amount - (float) $this->paid_amount, 2);
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this->status, self::OPEN, true);
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === InvoiceStatus::Cancelled;
+    }
+
+    /**
+     * @param  Builder<Invoice>  $query
+     */
+    public function scopeOpen(Builder $query): void
+    {
+        $query->whereIn($query->qualifyColumn('status'), self::OPEN);
+    }
+
+    /**
+     * "October 2026" for a billing period, or null.
+     */
+    public function periodLabel(): ?string
+    {
+        return $this->billing_period ? Carbon::createFromFormat('!Y-m', $this->billing_period)->translatedFormat('F Y') : null;
     }
 
     /**

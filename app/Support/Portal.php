@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 /**
  * The school portals (/admin, /teacher, /hr, /accounting, /student, /parent).
@@ -47,6 +48,31 @@ class Portal
     public static function dashboardRoute(string $portal): string
     {
         return "{$portal}.dashboard";
+    }
+
+    /**
+     * The first staff portal (not student or parent) the user can enter.
+     */
+    public static function staffPortalFor(User $user): ?string
+    {
+        foreach ($user->accessiblePortals() as $portal) {
+            if (! config("access.portals.{$portal}.self_service")) {
+                return $portal;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A staff member's own page (my-leave, my-payslips) in their first staff
+     * portal, for links in notifications; the school home when there is none.
+     */
+    public static function selfServiceUrl(User $user, string $page): string
+    {
+        $portal = static::staffPortalFor($user);
+
+        return $portal && Route::has("{$portal}.{$page}") ? route("{$portal}.{$page}") : route('tenant.home');
     }
 
     /**

@@ -66,6 +66,9 @@ $canManageAccount = computed(fn () => $this->profile->user
         'attendance' => __('Attendance'),
         'leave' => __('Leave'),
     ];
+    if (auth()->user()->can('invoices.view')) {
+        $tabs['fees'] = __('Fees');
+    }
 @endphp
 
 <div>
@@ -271,7 +274,7 @@ $canManageAccount = computed(fn () => $this->profile->user
                 </table>
             </div>
         </div>
-    @else
+    @elseif ($tab === 'leave')
         <div class="card mb-0">
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
@@ -300,5 +303,24 @@ $canManageAccount = computed(fn () => $this->profile->user
                 </table>
             </div>
         </div>
+    @elseif ($tab === 'fees' && isset($tabs['fees']))
+        <div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+            @can('fees.collect')
+                @if (auth()->user()->canAccessPortal('accounting'))
+                    <a href="{{ route('accounting.collect', ['for' => $student->id]) }}" wire:navigate class="btn btn-sm btn-success"><i class="ri-hand-coin-line me-1"></i>{{ __('Collect fees') }}</a>
+                @endif
+            @endcan
+            @can('invoices.create')
+                <button type="button" class="btn btn-sm btn-light" wire:click="$dispatch('open-modal', @js(['component' => 'forms.invoice', 'params' => ['student' => $student->id], 'size' => 'lg']))">
+                    <i class="ri-add-line me-1"></i>{{ __('New invoice') }}
+                </button>
+            @endcan
+            @can('fee-discounts.manage')
+                <button type="button" class="btn btn-sm btn-light" wire:click="$dispatch('open-modal', @js(['component' => 'forms.student-discount', 'params' => ['student' => $student->id]]))">
+                    <i class="ri-percent-line me-1"></i>{{ __('Give a discount') }}
+                </button>
+            @endcan
+        </div>
+        <livewire:components.data-table :table="App\Tables\InvoicesTable::class" :params="['student' => $student->id]" wire:key="student-invoices-{{ $student->id }}" />
     @endif
 </div>

@@ -87,6 +87,11 @@ return [
             'receipt_prefix' => 'RCT-',
         ],
 
+        'payroll' => [
+            // Take absent days (and half of each half day) off the monthly salary.
+            'deduct_absences' => true,
+        ],
+
         'fees' => [
             'discounts_enabled' => true,
             'sibling_discount_enabled' => false,
