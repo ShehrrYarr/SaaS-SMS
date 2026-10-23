@@ -321,3 +321,79 @@ than editing the Herozi partials, so the theme can be updated cleanly.
         min-width: 1.75rem;
     }
 }
+
+// Weekly timetable grid: one column per school day, one row per period.
+.timetable-grid {
+    font-size: 0.8125rem;
+    table-layout: fixed;
+    min-width: 46rem;
+
+    th[scope="row"] {
+        width: 7.5rem;
+    }
+
+    td {
+        padding: 0.25rem;
+        vertical-align: top;
+        height: 4.25rem;
+    }
+
+    .is-today {
+        background-color: rgba(var(--bs-primary-rgb), 0.04);
+    }
+
+    .slot {
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 0.375rem 0.5rem;
+        border: 0;
+        border-radius: var(--bs-border-radius);
+        text-align: start;
+        line-height: 1.35;
+        background: transparent;
+        color: inherit;
+    }
+
+    button.slot:hover,
+    button.slot:focus-visible {
+        outline: 2px solid rgba(var(--bs-primary-rgb), 0.35);
+    }
+
+    .slot-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--bs-secondary-color);
+    }
+}
+
+// Month calendar of a student's attendance.
+.attendance-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.375rem;
+
+    .day {
+        min-height: 3.25rem;
+        padding: 0.375rem;
+        border-radius: var(--bs-border-radius);
+        border: 1px solid var(--bs-border-color);
+        font-size: 0.8125rem;
+    }
+
+    .day.is-off {
+        background-color: var(--bs-tertiary-bg);
+        color: var(--bs-secondary-color);
+    }
+
+    .day.is-today {
+        border-color: var(--bs-primary);
+    }
+
+    .weekday {
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--bs-secondary-color);
+    }
+}

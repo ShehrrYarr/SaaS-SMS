@@ -38,7 +38,7 @@ state([
     // Payroll
     'deduct_absences' => true,
     // Fees
-    'discounts_enabled' => true, 'sibling_discount_enabled' => false, 'bulk_generation_enabled' => true,
+    'discounts_enabled' => true, 'sibling_discount_enabled' => false, 'bulk_generation_enabled' => true, 'notify_parents' => true,
     'late_fee_enabled' => false, 'late_fee_type' => 'fixed', 'late_fee_amount' => '0', 'late_fee_grace_days' => '0', 'late_fee_max_amount' => '',
 ]);
 
@@ -65,6 +65,7 @@ mount(function () {
         'discounts_enabled' => (bool) $school->setting('fees.discounts_enabled'),
         'sibling_discount_enabled' => (bool) $school->setting('fees.sibling_discount_enabled'),
         'bulk_generation_enabled' => (bool) $school->setting('fees.bulk_generation_enabled'),
+        'notify_parents' => (bool) $school->setting('fees.notify_parents'),
         'late_fee_enabled' => (bool) $school->setting('fees.late_fee.enabled'),
         'late_fee_type' => $school->setting('fees.late_fee.type'),
         'late_fee_amount' => (string) $school->setting('fees.late_fee.amount'),
@@ -109,6 +110,7 @@ $ruleGroups = protect(fn () => [
         'discounts_enabled' => ['boolean'],
         'sibling_discount_enabled' => ['boolean'],
         'bulk_generation_enabled' => ['boolean'],
+        'notify_parents' => ['boolean'],
         'late_fee_enabled' => ['boolean'],
         'late_fee_type' => ['required', Rule::enum(LateFeeType::class)],
         'late_fee_amount' => ['required', 'numeric', 'min:0', 'max:99999999', ...($this->late_fee_type === 'percentage' ? ['max:100'] : [])],
@@ -170,6 +172,7 @@ $save = function () {
                 'discounts_enabled' => (bool) $data['discounts_enabled'],
                 'sibling_discount_enabled' => (bool) $data['sibling_discount_enabled'],
                 'bulk_generation_enabled' => (bool) $data['bulk_generation_enabled'],
+                'notify_parents' => (bool) $data['notify_parents'],
                 'late_fee' => [
                     'enabled' => (bool) $data['late_fee_enabled'],
                     'type' => $data['late_fee_type'],
@@ -338,6 +341,7 @@ $save = function () {
                             <x-form.switch name="discounts_enabled" :label="__('Discounts and scholarships')" :hint="__('Give individual students a fixed or percentage reduction.')" />
                             <x-form.switch name="sibling_discount_enabled" :label="__('Sibling discount')" :hint="__('Reduce fees automatically for the second, third... child of the same parent.')" />
                             <x-form.switch name="bulk_generation_enabled" :label="__('Bulk monthly invoices')" :hint="__('Generate a month\'s invoices for a whole class or school in one go.')" />
+                            <x-form.switch name="notify_parents" :label="__('Notify parents')" :hint="__('Parents get a notice in their portal when an invoice is raised or a payment is received.')" />
 
                             <hr>
 

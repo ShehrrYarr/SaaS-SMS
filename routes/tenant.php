@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Tenant\FamilyDocumentController;
 use App\Http\Controllers\Tenant\FeeDocumentController;
 use App\Http\Controllers\Tenant\HomeController;
+use App\Http\Controllers\Tenant\HomeworkFileController;
 use App\Http\Controllers\Tenant\LeaveAttachmentController;
 use App\Http\Controllers\Tenant\LedgerProofController;
 use App\Http\Controllers\Tenant\NoticeAttachmentController;
@@ -45,6 +47,26 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('my/payslips', 'tenant.me.payslips')->middleware('can:view-own-payslips')->name('my-payslips');
             };
 
+            // The student and parent portals: one student's records (the parent's
+            // child picked in the header switcher). Pages check whose they are.
+            $familyRoutes = function () {
+                Volt::route('timetable', 'tenant.family.timetable')->name('timetable');
+                Volt::route('attendance', 'tenant.family.attendance')->name('attendance');
+                Volt::route('homework', 'tenant.family.homework.index')->middleware('can:self-service-homework')->name('homework.index');
+                Volt::route('homework/{homework}', 'tenant.family.homework.show')->middleware('can:self-service-homework')->whereNumber('homework')->name('homework.show');
+                Volt::route('results', 'tenant.family.results')->middleware('can:self-service-results')->name('results');
+                Volt::route('fees', 'tenant.family.fees')->middleware('can:self-service-fees')->name('fees');
+
+                Route::controller(FamilyDocumentController::class)->whereNumber(['invoice', 'payment', 'examination', 'student'])->group(function () {
+                    Route::get('invoices/{invoice}', 'invoice')->name('invoices.document');
+                    Route::get('invoices/{invoice}/pdf', 'invoicePdf')->name('invoices.pdf');
+                    Route::get('receipts/{payment}', 'receipt')->name('receipts.document');
+                    Route::get('receipts/{payment}/pdf', 'receiptPdf')->name('receipts.pdf');
+                    Route::get('results/{examination}/report-card/{student}', 'reportCard')->name('report-card');
+                    Route::get('results/{examination}/report-card/{student}/pdf', 'reportCardPdf')->name('report-card.pdf');
+                });
+            };
+
             Route::get('/', HomeController::class)->name('tenant.home');
 
             Volt::route('password/change', 'tenant.auth.change-password')->name('tenant.password.change');
@@ -54,6 +76,12 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
             Volt::route('notices/{notice}', 'tenant.notices.show')->whereNumber('notice')->name('tenant.notices.show');
             Route::get('notices/{notice}/attachment', NoticeAttachmentController::class)->whereNumber('notice')->name('tenant.notices.attachment');
             Route::get('leave/{leaveRequest}/attachment', LeaveAttachmentController::class)->whereNumber('leaveRequest')->name('tenant.leave.attachment');
+
+            // Homework files for teachers, students and parents (checked in the controller).
+            Route::controller(HomeworkFileController::class)->group(function () {
+                Route::get('homework/{homework}/attachment', 'attachment')->whereNumber('homework')->name('tenant.homework.attachment');
+                Route::get('homework-submissions/{submission}/attachment', 'submission')->whereNumber('submission')->name('tenant.homework.submission');
+            });
 
             // Salary slips for HR and for the staff member themself (checked in the controller).
             Route::controller(PayslipController::class)->whereNumber('record')->group(function () {
@@ -73,6 +101,7 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('classrooms', 'tenant.admin.classrooms.index')->middleware('can:classrooms.view')->name('classrooms.index');
                 Volt::route('subjects', 'tenant.admin.subjects.index')->middleware('can:subjects.view')->name('subjects.index');
                 Volt::route('subjects/allocation', 'tenant.admin.subjects.allocation')->middleware('can:subjects.allocate')->name('subjects.allocation');
+                Volt::route('timetable', 'tenant.admin.timetable.index')->middleware('can:timetable.view')->name('timetable.index');
 
                 // Examinations
                 Volt::route('examinations', 'tenant.admin.examinations.index')->middleware('can:examinations.view')->name('examinations.index');
@@ -116,6 +145,9 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('attendance/report', 'tenant.attendance.report')->middleware('can:attendance.view')->name('attendance.report');
                 Volt::route('student-leave', 'tenant.teacher.student-leave.index')->middleware('can:student-leave.view')->name('student-leave.index');
                 Volt::route('gradebook', 'tenant.teacher.gradebook.index')->middleware('can:marks.edit')->name('gradebook.index');
+                Volt::route('homework', 'tenant.teacher.homework.index')->middleware('can:homework.view')->name('homework.index');
+                Volt::route('homework/{homework}', 'tenant.teacher.homework.show')->middleware('can:homework.view')->whereNumber('homework')->name('homework.show');
+                Volt::route('timetable', 'tenant.teacher.timetable')->middleware('can:timetable.view')->name('timetable');
                 $selfServiceRoutes();
             });
 
@@ -161,13 +193,15 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 $selfServiceRoutes();
             });
 
-            Route::prefix('student')->name('student.')->middleware('portal:student')->group(function () {
+            Route::prefix('student')->name('student.')->middleware('portal:student')->group(function () use ($familyRoutes) {
                 Volt::route('/', 'tenant.student.dashboard')->name('dashboard');
+                $familyRoutes();
             });
 
-            Route::prefix('parent')->name('parent.')->middleware('portal:parent')->group(function () {
+            Route::prefix('parent')->name('parent.')->middleware('portal:parent')->group(function () use ($familyRoutes) {
                 Volt::route('/', 'tenant.parent.dashboard')->name('dashboard');
                 Volt::route('leave', 'tenant.parent.leave.index')->name('leave.index');
+                $familyRoutes();
             });
         });
     });

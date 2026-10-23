@@ -27,4 +27,12 @@ class ExamRemark extends TenantModel
     {
         return $this->belongsTo(StudentProfile::class, 'student_profile_id');
     }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function enteredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'entered_by');
+    }
 }

@@ -6,18 +6,18 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\UserStatus;
 use App\Models\Examination;
 use App\Models\ExamSchedule;
-use App\Models\ParentProfile;
 use App\Models\StudentEnrollment;
 use App\Models\StudentProfile;
-use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\SelfService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Collection;
 
 /**
- * Tells the students of an examination's classes, and their parents, that
- * results are out. Queued; the school travels with the job.
+ * Tells the students of an examination's classes, and their parents (one
+ * notice per child), that results are out, linking to the results page.
+ * Queued; the school travels with the job.
  */
 class SendResultNotifications implements ShouldQueue
 {
@@ -41,22 +41,35 @@ class SendResultNotifications implements ShouldQueue
             ->whereNotIn('status', [EnrollmentStatus::Left, EnrollmentStatus::Transferred])
             ->pluck('student_profile_id');
 
-        $studentUsers = StudentProfile::query()->whereIn('id', $studentIds)->select('user_id');
-        $parentUsers = ParentProfile::query()
-            ->whereHas('children', fn ($query) => $query->whereIn('student_profiles.id', $studentIds))
-            ->select('user_id');
+        $message = __('Report cards are ready to view.');
 
-        $notification = new SystemNotification(
-            title: __('Results published: :exam', ['exam' => $exam->name]),
-            message: __('Report cards are ready to view.'),
-            url: route('tenant.home'),
-            icon: 'ri-award-line',
-            color: 'success',
-        );
+        StudentProfile::query()
+            ->with(['user', 'parents.user'])
+            ->whereIn('id', $studentIds)
+            ->chunkById(200, function (Collection $students) use ($exam, $message) {
+                foreach ($students as $student) {
+                    if ($student->user?->status === UserStatus::Active) {
+                        $student->user->notify(new SystemNotification(
+                            __('Results published: :exam', ['exam' => $exam->name]),
+                            $message,
+                            route('student.results', ['exam' => $exam->id]),
+                            'ri-award-line',
+                            'success',
+                        ));
+                    }
 
-        User::query()
-            ->where('status', UserStatus::Active)
-            ->where(fn ($query) => $query->whereIn('id', $studentUsers)->orWhereIn('id', $parentUsers))
-            ->chunkById(500, fn ($users) => Notification::send($users, $notification));
+                    foreach ($student->parents as $parent) {
+                        if ($parent->user?->status === UserStatus::Active) {
+                            $parent->user->notify(new SystemNotification(
+                                __(':name\'s results are out: :exam', ['name' => $student->user?->name, 'exam' => $exam->name]),
+                                $message,
+                                SelfService::url('parent', 'results', $student, ['exam' => $exam->id]),
+                                'ri-award-line',
+                                'success',
+                            ));
+                        }
+                    }
+                }
+            });
     }
 }

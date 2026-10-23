@@ -22,6 +22,10 @@
 
             <div class="header-right hstack gap-3">
                 <div class="hstack gap-0 gap-sm-1">
+                    @if ($portal === 'parent')
+                        <livewire:layout.child-switcher />
+                    @endif
+
                     @if (count($portals) > 1 && $portal)
                         <div class="dropdown features-dropdown portal-switcher">
                             <button type="button" class="btn btn-sm btn-subtle-primary hstack gap-2" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('Switch portal') }}">

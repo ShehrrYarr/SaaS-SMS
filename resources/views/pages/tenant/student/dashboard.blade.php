@@ -1,31 +1,91 @@
 <?php
 
+/*
+ * Student portal dashboard: today's timetable, homework to do, attendance,
+ * the latest result and fee dues at a glance.
+ */
+
+use App\Services\Portals\StudentOverview;
+use App\Support\SelfService;
+
 use function Livewire\Volt\{computed, layout, title};
 
 layout('layouts.app');
 title(__('Dashboard'));
 
-$profile = computed(fn () => auth()->user()->studentProfile()->with(['schoolClass', 'section'])->first());
+$student = computed(fn () => SelfService::student());
+
+$overview = computed(function () {
+    $student = $this->student;
+
+    if (! $student) {
+        return null;
+    }
+
+    $service = app(StudentOverview::class);
+    $homework = StudentOverview::enabled('homework.view');
+    $results = StudentOverview::enabled('examinations.view');
+
+    return [
+        'attendance' => $service->attendance($student),
+        'today' => $service->today($student),
+        'homework' => $homework ? $service->upcomingHomework($student) : null,
+        'toDo' => $homework ? $service->homeworkToDoCount($student) : null,
+        'exams' => $results ? $service->publishedExams($student) : null,
+        'latest' => $results ? $service->latestResult($student) : null,
+        'fees' => StudentOverview::enabled('invoices.view') ? $service->fees($student) : null,
+        'remarks' => $service->remarks($student),
+    ];
+});
 
 ?>
+
+@php($data = $this->overview)
 
 <div>
     <x-page-header :title="__('Dashboard')" :breadcrumbs="[__('Student') => null, __('Dashboard') => null]" />
 
-    <div class="row g-4">
-        <div class="col-xl-6">
-            <x-dashboard.welcome :subtitle="$this->profile
-                ? trim(($this->profile->schoolClass?->name ?? '').' '.($this->profile->section?->name ?? '')).' · '.__('Admission no. :number', ['number' => $this->profile->admission_number])
-                : null" />
+    @if (! $this->student)
+        <div class="row g-4 mb-4">
+            <div class="col-xl-6"><x-dashboard.welcome /></div>
         </div>
-        <div class="col-xl-6">
-            <div class="card mb-0 h-100">
-                <x-empty-state icon="ri-calendar-check-line" :title="__('Nothing here yet')" :message="__('Your timetable, attendance, homework and results will appear here as your school records them.')" />
+        <x-family.missing />
+    @else
+        <div class="row g-4 mb-4">
+            <div class="col-xl-6">
+                <x-dashboard.welcome :subtitle="collect([$this->student->placementLabel(), __('Admission no. :number', ['number' => $this->student->admission_number])])->filter()->implode(' · ')" />
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <x-stat-card :label="__('Attendance')" :value="$data['attendance']['rate'] !== null ? $data['attendance']['rate'].'%' : '—'"
+                             icon="ri-calendar-check-line" color="success" :hint="__('this year')" />
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                @if ($data['toDo'] !== null)
+                    <x-stat-card :label="__('Homework to do')" :value="$data['toDo']" icon="ri-book-open-line" :color="$data['toDo'] > 0 ? 'warning' : 'primary'" />
+                @else
+                    <x-stat-card :label="__('Classes today')" :value="$data['today']->count()" icon="ri-time-line" color="primary" />
+                @endif
             </div>
         </div>
-    </div>
 
-    <div class="mt-4">
-        <x-notices.latest />
-    </div>
+        <div class="row g-4 mb-4">
+            <div class="col-xl-4"><x-timetable.today :entries="$data['today']" /></div>
+            @if ($data['homework'] !== null)
+                <div class="col-xl-4"><x-family.homework-card :items="$data['homework']" portal="student" /></div>
+            @endif
+            <div class="col-xl-4"><x-family.attendance-card :stats="$data['attendance']" :url="route('student.attendance')" /></div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            @if ($data['exams'] !== null)
+                <div class="col-xl-4"><x-family.results-card :card="$data['latest']" :exams="$data['exams']" portal="student" :student="$this->student" /></div>
+            @endif
+            @if ($data['fees'] !== null)
+                <div class="col-xl-4"><x-family.fees-card :summary="$data['fees']" portal="student" /></div>
+            @endif
+            <div class="col-xl-4"><x-family.remarks-card :remarks="$data['remarks']" /></div>
+        </div>
+    @endif
+
+    <x-notices.latest />
 </div>

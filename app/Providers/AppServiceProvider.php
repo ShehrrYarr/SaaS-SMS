@@ -57,6 +57,12 @@ class AppServiceProvider extends ServiceProvider
             && PlanFeatures::allows(tenant()->plan, 'payroll.view')
             && $user->staffProfile()->exists());
 
+        // Student and parent portal pages that need a plan feature: homework,
+        // results (examinations) and fees (finance).
+        foreach (['homework' => 'homework.view', 'results' => 'examinations.view', 'fees' => 'invoices.view'] as $page => $permission) {
+            Gate::define("self-service-{$page}", fn (User $user) => tenant() !== null && PlanFeatures::allows(tenant()->plan, $permission));
+        }
+
         Password::defaults(fn () => Password::min(8)->letters()->numbers());
     }
 

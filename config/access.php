@@ -87,7 +87,7 @@ return [
         // Teacher portal ("manage" = any class / past dates, not just own sections)
         'attendance' => ['label' => 'Student Attendance', 'portal' => 'teacher', 'actions' => ['view', 'mark', 'manage']],
         'marks' => ['label' => 'Marks & Gradebook', 'portal' => 'teacher', 'actions' => ['view', 'edit', 'manage']],
-        'homework' => ['label' => 'Homework', 'portal' => 'teacher', 'actions' => ['view', 'create', 'edit', 'delete', 'grade']],
+        'homework' => ['label' => 'Homework', 'portal' => 'teacher', 'actions' => ['view', 'create', 'edit', 'delete', 'grade', 'manage']],
         'student-leave' => ['label' => 'Student Leave', 'portal' => 'teacher', 'actions' => ['view', 'approve']],
 
         // HR portal
@@ -125,7 +125,8 @@ return [
             'description' => 'Class rosters, attendance, gradebook and homework for assigned classes.',
             'permissions' => [
                 'portal.teacher', 'attendance.view', 'attendance.mark', 'marks.view', 'marks.edit',
-                'homework.*', 'student-leave.*', 'students.view', 'timetable.view',
+                'homework.view', 'homework.create', 'homework.edit', 'homework.delete', 'homework.grade',
+                'student-leave.*', 'students.view', 'timetable.view',
                 'examinations.view', 'leave.apply',
             ],
         ],

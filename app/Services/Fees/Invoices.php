@@ -33,6 +33,7 @@ class Invoices
         private readonly FeeCalculator $calculator,
         private readonly Sequences $sequences,
         private readonly SchoolCalendar $calendar,
+        private readonly FeeNotifications $notifications,
     ) {}
 
     public function nextNumber(CarbonInterface $issueDate): string
@@ -148,6 +149,8 @@ class Invoices
                     ->withProperties(['student' => $student->user?->name, 'total' => (float) $invoice->total_amount])
                     ->log('Invoice raised');
             }
+
+            $this->notifications->invoiceRaised($invoice);
 
             return $invoice;
         });

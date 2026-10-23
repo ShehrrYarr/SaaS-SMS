@@ -27,7 +27,8 @@ function themed(options, height) {
 
     return {
         ...options,
-        colors: options.colors ?? PALETTE.map(token).filter(Boolean),
+        // Colours can be CSS tokens ('--bs-success') or plain values.
+        colors: (options.colors ?? PALETTE).map((color) => (color.startsWith('--') ? token(color) : color)).filter(Boolean),
         chart: {
             height,
             fontFamily: 'inherit',

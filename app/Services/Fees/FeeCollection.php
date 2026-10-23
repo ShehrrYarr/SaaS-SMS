@@ -27,6 +27,7 @@ class FeeCollection
         private readonly LateFees $lateFees,
         private readonly Sequences $sequences,
         private readonly Ledger $ledger,
+        private readonly FeeNotifications $notifications,
     ) {}
 
     public function receiptNumber(CarbonInterface $date): string
@@ -98,6 +99,8 @@ class FeeCollection
                     'method' => $method->value,
                 ])
                 ->log('Fee received');
+
+            $this->notifications->paymentReceived($payment, $invoice);
 
             return $payment;
         });

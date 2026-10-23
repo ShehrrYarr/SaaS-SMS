@@ -80,6 +80,12 @@ return [
             'weekly_off' => '7',
         ],
 
+        'timetable' => [
+            // The bell schedule: [['number' => 1, 'start' => '08:00', 'end' => '08:40'], ...].
+            // Empty by default (a list doesn't merge with defaults); set on Admin → Timetable.
+            'periods' => [],
+        ],
+
         'numbering' => [
             'admission_prefix' => 'ADM-',
             'employee_prefix' => 'EMP-',
@@ -96,6 +102,8 @@ return [
             'discounts_enabled' => true,
             'sibling_discount_enabled' => false,
             'bulk_generation_enabled' => true,
+            // In-app notice to parents when an invoice is raised or a payment received.
+            'notify_parents' => true,
             'late_fee' => [
                 'enabled' => false,
                 'type' => 'fixed', // fixed | daily | percentage

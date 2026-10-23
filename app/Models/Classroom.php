@@ -20,6 +20,14 @@ class Classroom extends TenantModel
     }
 
     /**
+     * "101 · Science Lab", or just the room number.
+     */
+    public function label(): string
+    {
+        return $this->room_number.($this->name ? ' · '.$this->name : '');
+    }
+
+    /**
      * @return BelongsTo<Campus, $this>
      */
     public function campus(): BelongsTo

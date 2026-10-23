@@ -19,7 +19,7 @@ beforeEach(function () {
 
 it('expands role patterns from the catalog', function () {
     expect(PermissionCatalog::expand(['homework.*']))
-        ->toBe(['homework.view', 'homework.create', 'homework.edit', 'homework.delete', 'homework.grade']);
+        ->toBe(['homework.view', 'homework.create', 'homework.edit', 'homework.delete', 'homework.grade', 'homework.manage']);
 });
 
 it('grants everything except the self-service portals with "*"', function () {
