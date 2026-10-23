@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Enums\UserType;
 use App\Models\Concerns\BelongsToSchool;
 use App\Support\Access\PermissionCatalog;
+use App\Support\Billing\PlanFeatures;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,12 +14,17 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use BelongsToSchool, HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use BelongsToSchool, HasFactory, Notifiable, SoftDeletes;
+
+    use HasRoles {
+        hasPermissionTo as hasPermissionThroughRoles;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -79,6 +85,24 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === UserStatus::Active;
+    }
+
+    /**
+     * Spatie's permission check (behind every Gate, @can and can: middleware
+     * check), limited to the features of the active school's plan: a role can
+     * hold "payroll.generate", but it only counts if the plan includes payroll.
+     *
+     * @param  string|int|\BackedEnum|Permission  $permission
+     */
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        $name = $permission instanceof Permission ? $permission->name : $permission;
+
+        if (is_string($name) && ($school = tenant()) && ! PlanFeatures::allows($school->plan, $name)) {
+            return false;
+        }
+
+        return $this->hasPermissionThroughRoles($permission, $guardName);
     }
 
     public function canAccessPortal(string $portal): bool

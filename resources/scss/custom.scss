@@ -76,6 +76,13 @@ than editing the Herozi partials, so the theme can be updated cleanly.
     overflow-y: auto;
 }
 
+// Make the scroll box the containing block for absolutely positioned helpers
+// (.visually-hidden labels in cells). Otherwise they escape it, and a wide
+// table makes the whole page scroll sideways.
+.table-responsive {
+    position: relative;
+}
+
 // Data table footer: keep Livewire's Bootstrap pagination compact.
 .data-table-pagination {
     nav > .d-flex {
@@ -100,4 +107,177 @@ than editing the Herozi partials, so the theme can be updated cleanly.
     height: 3rem;
     border-radius: 0.75rem;
     font-size: 1.375rem;
+}
+
+.min-w-0 {
+    min-width: 0;
+}
+
+// Square initial/logo tile for schools and other records in lists.
+.entity-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    background-color: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+    font-weight: 600;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    &.entity-avatar-lg {
+        width: 3.5rem;
+        height: 3.5rem;
+        font-size: 1.375rem;
+        border-radius: 0.75rem;
+    }
+}
+
+// One-time sign-in details (<x-credentials>).
+.credentials-list {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.credentials-row {
+    display: grid;
+    grid-template-columns: minmax(8rem, 30%) 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+
+    & + & {
+        border-top: 1px solid var(--bs-border-color);
+    }
+
+    dt {
+        font-weight: 500;
+        color: var(--bs-secondary-color);
+    }
+
+    dd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin: 0;
+        min-width: 0;
+    }
+
+    @media (max-width: 575.98px) {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+}
+
+.credentials-value {
+    font-size: 0.9375rem;
+    color: var(--bs-emphasis-color);
+    word-break: break-all;
+}
+
+// Multi-step wizard header.
+.wizard-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--bs-secondary-color);
+        font-weight: 500;
+    }
+
+    .wizard-step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        border: 1px solid var(--bs-border-color);
+        font-size: 0.8125rem;
+    }
+
+    .is-current {
+        color: var(--bs-emphasis-color);
+
+        .wizard-step-number {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+            color: #fff;
+        }
+    }
+
+    .is-done .wizard-step-number {
+        background-color: var(--bs-success-bg-subtle);
+        border-color: var(--bs-success-border-subtle);
+        color: var(--bs-success);
+    }
+}
+
+// Selectable cards (plans in the school wizard).
+.option-card {
+    position: relative;
+    display: block;
+    height: 100%;
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.625rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+        border-color: var(--bs-primary-border-subtle);
+    }
+
+    .form-check-input {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        margin: 0;
+    }
+
+    &:has(.form-check-input:checked) {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.15);
+    }
+
+    &:has(.form-check-input:focus-visible) {
+        outline: 2px solid var(--bs-primary);
+        outline-offset: 2px;
+    }
+}
+
+// Definition lists in detail cards.
+.detail-list {
+    display: grid;
+    grid-template-columns: minmax(7rem, 40%) 1fr;
+    gap: 0.625rem 1rem;
+    margin: 0;
+
+    dt {
+        font-weight: 500;
+        color: var(--bs-secondary-color);
+    }
+
+    dd {
+        margin: 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
 }

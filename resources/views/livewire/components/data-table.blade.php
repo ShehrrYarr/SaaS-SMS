@@ -95,7 +95,7 @@ $clearFilters = function () {
 
 $runAction = function (string $name, int|string $key) {
     $action = $this->definition->action($name);
-    abort_if($action === null || $action->isModal(), 404);
+    abort_if($action === null || $action->isModal() || $action->isLink(), 404);
 
     // Resolved through the table's own (tenant-scoped) query.
     $row = $this->definition->findRow($key);
@@ -261,6 +261,13 @@ $runBulkAction = function (string $name) {
                                 <div class="d-inline-flex gap-1">
                                     @foreach ($actions as $action)
                                         @continue(! $action->isAllowed($user, $row))
+
+                                        @if ($action->isLink())
+                                            <a href="{{ $action->urlFor($row) }}" wire:navigate class="btn btn-subtle-{{ $action->color }} icon-btn-sm" title="{{ $action->label }}" aria-label="{{ $action->label }}">
+                                                <i class="{{ $action->icon }}"></i>
+                                            </a>
+                                            @continue
+                                        @endif
 
                                         <button type="button" class="btn btn-subtle-{{ $action->color }} icon-btn-sm" title="{{ $action->label }}" aria-label="{{ $action->label }}"
                                             @if ($action->isModal())

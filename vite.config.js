@@ -15,6 +15,10 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        // ApexCharts (~1 MB) is its own chunk, loaded only by pages with charts.
+        chunkSizeWarningLimit: 1100,
+    },
     css: {
         preprocessorOptions: {
             scss: {

@@ -23,5 +23,18 @@ Route::prefix(config('tenancy.central_prefix'))
 
         Route::middleware(['auth', 'super-admin'])->group(function () {
             Volt::route('/', 'central.dashboard')->name('dashboard');
+
+            Route::middleware('can:manage-schools')->group(function () {
+                Volt::route('schools', 'central.schools.index')->name('schools.index');
+                Volt::route('schools/create', 'central.schools.create')->name('schools.create');
+                Volt::route('schools/{school}', 'central.schools.show')->name('schools.show');
+            });
+
+            Route::middleware('can:manage-subscriptions')->group(function () {
+                Volt::route('plans', 'central.plans.index')->name('plans.index');
+                Volt::route('subscriptions', 'central.subscriptions.index')->name('subscriptions.index');
+            });
+
+            Volt::route('analytics', 'central.analytics')->middleware('can:view-analytics')->name('analytics');
         });
     });

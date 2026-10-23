@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AcademicPeriodStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\RecordStatus;
 use App\Enums\SchoolStatus;
 use App\Enums\UserStatus;
@@ -13,6 +14,7 @@ use App\Models\Plan;
 use App\Models\School;
 use App\Models\User;
 use App\Services\Access\SyncDefaultSchoolRoles;
+use App\Services\Billing\SubscriptionManager;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,7 +31,7 @@ class DemoSchoolSeeder extends Seeder
 
     public const PASSWORD = 'password';
 
-    public function run(SyncDefaultSchoolRoles $syncRoles): void
+    public function run(SyncDefaultSchoolRoles $syncRoles, SubscriptionManager $subscriptions): void
     {
         $school = School::query()->firstOrCreate(['slug' => self::SLUG], [
             'name' => 'Greenfield Academy',
@@ -64,6 +66,21 @@ class DemoSchoolSeeder extends Seeder
 
             $admin->assignRole(UserType::SchoolAdmin->defaultRole());
         });
+
+        // A paid month, so the school shows as subscribed.
+        if (tenancy()->run($school, fn () => $school->subscriptionPayments()->doesntExist())) {
+            [$start, $end] = $subscriptions->suggestPeriod($school);
+
+            $subscriptions->recordPayment($school, [
+                'plan_id' => $school->plan_id,
+                'amount' => $school->plan?->price ?? 0,
+                'period_start' => $start->toDateString(),
+                'period_end' => $end->toDateString(),
+                'paid_on' => today()->toDateString(),
+                'payment_method' => PaymentMethod::BankTransfer,
+                'reference' => 'DEMO-0001',
+            ]);
+        }
 
         $this->command?->info('Demo school: /'.self::SLUG.'/login  (admin / '.self::PASSWORD.')');
     }

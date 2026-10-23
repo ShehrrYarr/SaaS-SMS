@@ -33,6 +33,8 @@
 
     <main class="app-wrapper">
         <div class="app-container">
+            <x-subscription-notice :school="$school" />
+
             {{ $slot }}
         </div>
     </main>

@@ -6,7 +6,7 @@
             ...fields...
         </x-modal.form>
 --}}
-@props(['title', 'submit' => 'save', 'submitLabel' => __('Save'), 'subtitle' => null])
+@props(['title', 'submit' => 'save', 'submitLabel' => __('Save'), 'submitColor' => 'primary', 'subtitle' => null])
 
 <form wire:submit="{{ $submit }}" novalidate {{ $attributes->class('modal-form') }}>
     <div class="modal-header">
@@ -28,7 +28,7 @@
     <div class="modal-footer">
         {{ $footer ?? '' }}
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="{{ $submit }}">
+        <button type="submit" class="btn btn-{{ $submitColor }}" wire:loading.attr="disabled" wire:target="{{ $submit }}">
             <span wire:loading.remove wire:target="{{ $submit }}">{{ $submitLabel }}</span>
             <span wire:loading wire:target="{{ $submit }}"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ __('Saving…') }}</span>
         </button>

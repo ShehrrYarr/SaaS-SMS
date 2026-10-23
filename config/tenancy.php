@@ -53,6 +53,7 @@ return [
         'docs', 'help', 'support', 'about', 'contact', 'pricing', 'blog',
         'terms', 'privacy', 'demo', 'test', 'staging', 'herozi',
         'teacher', 'student', 'parent', 'hr', 'accounting',
+        'create', 'new', 'edit',
     ],
 
     /*

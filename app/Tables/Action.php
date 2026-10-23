@@ -26,6 +26,8 @@ class Action
 
     private ?Closure $modalParams = null;
 
+    private ?Closure $url = null;
+
     private ?Closure $handler = null;
 
     private string|Closure|null $permission = null;
@@ -94,6 +96,18 @@ class Action
         return $this;
     }
 
+    /**
+     * Link to another page (opened with wire:navigate).
+     *
+     * @param  Closure(Model): string  $url
+     */
+    public function url(Closure $url): static
+    {
+        $this->url = $url;
+
+        return $this;
+    }
+
     public function confirm(string $message, ?string $title = null): static
     {
         $this->confirm = $message;
@@ -145,6 +159,16 @@ class Action
     public function isModal(): bool
     {
         return $this->modal !== null;
+    }
+
+    public function isLink(): bool
+    {
+        return $this->url !== null;
+    }
+
+    public function urlFor(Model $row): string
+    {
+        return ($this->url)($row);
     }
 
     /**
