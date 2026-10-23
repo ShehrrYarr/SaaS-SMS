@@ -9,6 +9,9 @@ class Mark extends TenantModel
 {
     use AuditsChanges;
 
+    /** Entering a sheet isn't logged per mark (the gradebook logs one summary); corrections are. */
+    protected static $recordEvents = ['updated', 'deleted'];
+
     protected function casts(): array
     {
         return [

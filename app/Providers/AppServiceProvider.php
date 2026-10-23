@@ -133,6 +133,7 @@ class AppServiceProvider extends ServiceProvider
             'examination' => Models\Examination::class,
             'exam_schedule' => Models\ExamSchedule::class,
             'mark' => Models\Mark::class,
+            'exam_remark' => Models\ExamRemark::class,
             'homework' => Models\Homework::class,
             'homework_submission' => Models\HomeworkSubmission::class,
             'fee_structure' => Models\FeeStructure::class,

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Tenant\HomeController;
 use App\Http\Controllers\Tenant\LeaveAttachmentController;
 use App\Http\Controllers\Tenant\NoticeAttachmentController;
+use App\Http\Controllers\Tenant\ReportCardController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -58,6 +59,16 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('subjects', 'tenant.admin.subjects.index')->middleware('can:subjects.view')->name('subjects.index');
                 Volt::route('subjects/allocation', 'tenant.admin.subjects.allocation')->middleware('can:subjects.allocate')->name('subjects.allocation');
 
+                // Examinations
+                Volt::route('examinations', 'tenant.admin.examinations.index')->middleware('can:examinations.view')->name('examinations.index');
+                Volt::route('examinations/{examination}', 'tenant.admin.examinations.show')->middleware('can:examinations.view')->whereNumber('examination')->name('examinations.show');
+                Route::middleware('can:examinations.view')->whereNumber(['examination', 'student'])->controller(ReportCardController::class)->group(function () {
+                    Route::get('examinations/{examination}/report-cards', 'section')->name('examinations.report-cards');
+                    Route::get('examinations/{examination}/report-cards/{student}', 'show')->name('examinations.report-card');
+                    Route::get('examinations/{examination}/report-cards/{student}/pdf', 'pdf')->name('examinations.report-card.pdf');
+                });
+                Volt::route('grade-scales', 'tenant.admin.grade-scales.index')->middleware('can:grade-scales.view')->name('grade-scales.index');
+
                 // People
                 Volt::route('students', 'tenant.admin.students.index')->middleware('can:students.view')->name('students.index');
                 Volt::route('students/admit', 'tenant.admin.students.form')->middleware('can:students.create')->name('students.create');
@@ -87,6 +98,7 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('attendance', 'tenant.teacher.attendance.index')->middleware('can:attendance.mark')->name('attendance.index');
                 Volt::route('attendance/report', 'tenant.attendance.report')->middleware('can:attendance.view')->name('attendance.report');
                 Volt::route('student-leave', 'tenant.teacher.student-leave.index')->middleware('can:student-leave.view')->name('student-leave.index');
+                Volt::route('gradebook', 'tenant.teacher.gradebook.index')->middleware('can:marks.edit')->name('gradebook.index');
             });
 
             Route::prefix('hr')->name('hr.')->middleware('portal:hr')->group(function () use ($staffRoutes) {

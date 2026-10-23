@@ -38,13 +38,10 @@ $attendance = computed(function () {
         ->when($this->year, fn ($query) => $query->where('academic_year_id', $this->year->id));
 
     $counts = (clone $query)->selectRaw('status, count(*) as total')->groupBy('status')->toBase()->pluck('total', 'status')->map(fn ($total) => (int) $total);
-    $marked = $counts->sum();
-    $attended = ($counts[AttendanceStatus::Present->value] ?? 0) + ($counts[AttendanceStatus::Late->value] ?? 0);
-
     return [
         'counts' => $counts,
-        'marked' => $marked,
-        'rate' => $marked ? round($attended / $marked * 100, 1) : null,
+        'marked' => $counts->sum(),
+        'rate' => AttendanceStatus::rate($counts),
         'recent' => $query->latest('date')->limit(15)->get(),
     ];
 });

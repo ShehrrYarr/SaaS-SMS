@@ -5,6 +5,7 @@ namespace App\Services\Schools;
 use App\Enums\LeaveAppliesTo;
 use App\Enums\RecordStatus;
 use App\Models\Campus;
+use App\Models\GradeScale;
 use App\Models\LeaveType;
 use App\Models\School;
 
@@ -23,6 +24,19 @@ class SeedSchoolDefaults
         'Casual Leave' => ['CL', LeaveAppliesTo::Staff, 10, true],
         'Unpaid Leave' => ['UL', LeaveAppliesTo::Staff, null, false],
         'Family Emergency' => ['FE', LeaveAppliesTo::Student, null, true],
+    ];
+
+    /**
+     * The default grade scale: grade => [starts at %, grade point, remark].
+     */
+    public const GRADES = [
+        'A+' => [90, 4.0, 'Outstanding'],
+        'A' => [80, 3.7, 'Excellent'],
+        'B' => [70, 3.0, 'Very good'],
+        'C' => [60, 2.5, 'Good'],
+        'D' => [50, 2.0, 'Satisfactory'],
+        'E' => [40, 1.0, 'Pass'],
+        'F' => [0, 0.0, 'Fail'],
     ];
 
     public function handle(School $school): void
@@ -45,6 +59,30 @@ class SeedSchoolDefaults
                     'is_active' => true,
                 ]);
             }
+
+            if (GradeScale::query()->withTrashed()->doesntExist()) {
+                $this->seedGradeScale();
+            }
         });
+    }
+
+    private function seedGradeScale(): void
+    {
+        $scale = GradeScale::query()->create(['name' => __('Standard'), 'is_default' => true]);
+        $ceiling = 100.0;
+        $order = 0;
+
+        foreach (self::GRADES as $grade => [$from, $point, $remark]) {
+            $scale->items()->create([
+                'grade' => $grade,
+                'min_percentage' => $from,
+                'max_percentage' => $ceiling,
+                'grade_point' => $point,
+                'remark' => __($remark),
+                'sort_order' => $order++,
+            ]);
+
+            $ceiling = round($from - 0.01, 2);
+        }
     }
 }

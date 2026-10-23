@@ -74,14 +74,13 @@ $sheet = computed(function () {
     $rows = $students->map(function ($student) use ($marks) {
         $mine = $marks->get($student->id, collect());
         $counts = $mine->countBy(fn (AttendanceStatus $status) => $status->value);
-        $marked = $mine->count();
-        $attended = ($counts[AttendanceStatus::Present->value] ?? 0) + ($counts[AttendanceStatus::Late->value] ?? 0);
+        $rate = AttendanceStatus::rate($counts);
 
         return [
             'student' => $student,
             'marks' => $mine,
             'counts' => $counts,
-            'rate' => $marked ? round($attended / $marked * 100) : null,
+            'rate' => $rate === null ? null : (int) round($rate),
         ];
     });
 
