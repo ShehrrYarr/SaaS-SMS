@@ -40,6 +40,7 @@ mount(function (string $table, array $params = []) {
 
     [$this->sortBy, $this->sortDirection] = $this->definition->defaultSort();
     $this->perPage = $this->definition->perPage;
+    $this->filters = $this->definition->defaultFilters();
 });
 
 // Permissions can change mid-session: check again on every request.
@@ -89,7 +90,7 @@ $togglePage = function (array $keys) {
 
 $clearFilters = function () {
     $this->search = '';
-    $this->filters = [];
+    $this->filters = $this->definition->defaultFilters();
     $this->resetView();
 };
 
@@ -110,6 +111,9 @@ $runAction = function (string $name, int|string $key) {
     }
 
     $this->selected = array_values(array_diff($this->selected, [(string) $key]));
+
+    // Lets the page refresh figures shown around the table.
+    $this->dispatch('table-action-done', table: $this->table);
 
     if ($message) {
         $this->toast($message);
@@ -138,6 +142,7 @@ $runBulkAction = function (string $name) {
     }
 
     $this->selected = [];
+    $this->dispatch('table-action-done', table: $this->table);
 
     if ($message) {
         $this->toast($message);
@@ -157,7 +162,8 @@ $runBulkAction = function (string $name) {
     $selectable = $bulkActions->isNotEmpty();
     $pageKeys = $rows->getCollection()->map(fn ($row) => (string) $row->getKey())->all();
     $pageSelected = $pageKeys !== [] && array_diff($pageKeys, $selected) === [];
-    $filtering = trim($search) !== '' || collect($filters)->contains(fn ($filter) => filled($this->filters[$filter->key] ?? null));
+    $defaults = $definition->defaultFilters();
+    $filtering = trim($search) !== '' || collect($filters)->contains(fn ($filter) => (string) ($this->filters[$filter->key] ?? '') !== (string) ($defaults[$filter->key] ?? ''));
     $colspan = count($columns) + ($selectable ? 1 : 0) + ($actions ? 1 : 0);
 @endphp
 

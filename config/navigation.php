@@ -85,6 +85,7 @@ return [
         ['heading' => 'Me'],
         ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'admin.my-leave', 'can' => 'apply-own-leave'],
         ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'admin.my-payslips', 'can' => 'view-own-payslips'],
+        ['label' => 'My Library Books', 'icon' => 'ri-book-2-line', 'route' => 'admin.my-library', 'can' => 'has-library-loans'],
     ],
 
     'teacher' => [
@@ -102,6 +103,7 @@ return [
         ['heading' => 'Me'],
         ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'teacher.my-leave', 'can' => 'apply-own-leave'],
         ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'teacher.my-payslips', 'can' => 'view-own-payslips'],
+        ['label' => 'My Library Books', 'icon' => 'ri-book-2-line', 'route' => 'teacher.my-library', 'can' => 'has-library-loans'],
     ],
 
     'hr' => [
@@ -123,6 +125,7 @@ return [
         ['heading' => 'Me'],
         ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'hr.my-leave', 'can' => 'apply-own-leave'],
         ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'hr.my-payslips', 'can' => 'view-own-payslips'],
+        ['label' => 'My Library Books', 'icon' => 'ri-book-2-line', 'route' => 'hr.my-library', 'can' => 'has-library-loans'],
     ],
 
     'accounting' => [
@@ -149,6 +152,7 @@ return [
         ['heading' => 'Me'],
         ['label' => 'My Leave', 'icon' => 'ri-calendar-event-line', 'route' => 'accounting.my-leave', 'can' => 'apply-own-leave'],
         ['label' => 'My Salary Slips', 'icon' => 'ri-file-paper-2-line', 'route' => 'accounting.my-payslips', 'can' => 'view-own-payslips'],
+        ['label' => 'My Library Books', 'icon' => 'ri-book-2-line', 'route' => 'accounting.my-library', 'can' => 'has-library-loans'],
     ],
 
     'student' => [
@@ -160,6 +164,8 @@ return [
         ['label' => 'Homework', 'icon' => 'ri-book-open-line', 'route' => 'student.homework.index', 'can' => 'self-service-homework'],
         ['label' => 'Results', 'icon' => 'ri-award-line', 'route' => 'student.results', 'can' => 'self-service-results'],
         ['label' => 'Fees', 'icon' => 'ri-bill-line', 'route' => 'student.fees', 'can' => 'self-service-fees'],
+        ['label' => 'Library', 'icon' => 'ri-book-2-line', 'route' => 'student.library', 'can' => 'self-service-library'],
+        ['label' => 'Transport & Hostel', 'icon' => 'ri-bus-2-line', 'route' => 'student.services', 'can' => 'self-service-services'],
         ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],
 
@@ -173,6 +179,8 @@ return [
         ['label' => 'Homework', 'icon' => 'ri-book-open-line', 'route' => 'parent.homework.index', 'can' => 'self-service-homework'],
         ['label' => 'Results', 'icon' => 'ri-award-line', 'route' => 'parent.results', 'can' => 'self-service-results'],
         ['label' => 'Fees', 'icon' => 'ri-bill-line', 'route' => 'parent.fees', 'can' => 'self-service-fees'],
+        ['label' => 'Library', 'icon' => 'ri-book-2-line', 'route' => 'parent.library', 'can' => 'self-service-library'],
+        ['label' => 'Transport & Hostel', 'icon' => 'ri-bus-2-line', 'route' => 'parent.services', 'can' => 'self-service-services'],
         ['label' => 'Leave Requests', 'icon' => 'ri-calendar-close-line', 'route' => 'parent.leave.index'],
         ['label' => 'Notice Board', 'icon' => 'ri-megaphone-line', 'route' => 'tenant.notices.index'],
     ],

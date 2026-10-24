@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToSchool;
 use App\Support\Access\PermissionCatalog;
 use App\Support\Billing\PlanFeatures;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -176,5 +177,15 @@ class User extends Authenticatable
     public function parentProfile(): HasOne
     {
         return $this->hasOne(ParentProfile::class);
+    }
+
+    /**
+     * Library loans, for students and staff.
+     *
+     * @return HasMany<BookIssue, $this>
+     */
+    public function bookIssues(): HasMany
+    {
+        return $this->hasMany(BookIssue::class);
     }
 }

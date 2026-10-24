@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -231,7 +232,26 @@ class Column
             return;
         }
 
-        $query->orderBy($query->qualifyColumn($this->key), $direction);
+        // Aggregates (withCount, withSum, sub-selects) are select aliases, which
+        // can't be qualified with the table name.
+        $column = $this->isSelectAlias($query) ? $this->key : $query->qualifyColumn($this->key);
+
+        $query->orderBy($column, $direction);
+    }
+
+    private function isSelectAlias(Builder $query): bool
+    {
+        $base = $query->getQuery();
+
+        foreach ($base->columns ?? [] as $selected) {
+            $sql = $selected instanceof Expression ? (string) $selected->getValue($base->getGrammar()) : (string) $selected;
+
+            if (preg_match('/\s+as\s+[`"\[]?'.preg_quote($this->key, '/').'[`"\]]?$/i', $sql)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

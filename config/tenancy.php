@@ -98,6 +98,15 @@ return [
             'deduct_absences' => true,
         ],
 
+        'library' => [
+            'loan_days' => 14,
+            'max_renewals' => 2,
+            'max_books_student' => 3,
+            'max_books_staff' => 5,
+            // Charged per day a book is kept past its due date; 0 for no overdue fines.
+            'fine_per_day' => 0,
+        ],
+
         'fees' => [
             'discounts_enabled' => true,
             'sibling_discount_enabled' => false,

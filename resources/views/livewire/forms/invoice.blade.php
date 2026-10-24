@@ -2,7 +2,8 @@
 
 /*
  * Raise one invoice for a student: the fees that apply to them (discounts
- * worked out automatically) plus any one-off charges.
+ * worked out automatically), their transport and hostel charges for the
+ * month, plus any one-off charges.
  *     $dispatch('open-modal', { component: 'forms.invoice', size: 'lg' })
  *     $dispatch('open-modal', { component: 'forms.invoice', params: { student: 12 }, size: 'lg' })
  */
@@ -15,6 +16,7 @@ use App\Services\Attendance\SchoolCalendar;
 use App\Services\Fees\FeeCalculator;
 use App\Services\Fees\FeeSchedule;
 use App\Services\Fees\Invoices;
+use App\Services\Fees\ServiceCharges;
 use App\Support\Billing\Money;
 use App\Tables\ActionFailed;
 use Illuminate\Support\Carbon;
@@ -28,6 +30,7 @@ state(['fixedStudent' => false])->locked();
 state([
     'billing_period' => '', 'issue_date' => '', 'due_date' => '',
     'fees' => [],      // fee id (string) => bool
+    'services' => [],  // transport|hostel => bool
     'custom' => [],    // [['description' => '', 'amount' => '']]
     'notes' => '',
 ]);
@@ -87,8 +90,19 @@ $lines = computed(function () {
     return $lines;
 });
 
+// Transport and hostel charges for the month, keyed by service.
+$serviceLines = computed(fn () => $this->student && $this->period
+    ? app(ServiceCharges::class)->preview($this->student, $this->period)
+    : []);
+
 $total = computed(function () {
     $total = 0;
+
+    foreach ($this->serviceLines as $kind => $charge) {
+        if (! $charge['billed'] && ($this->services[$kind] ?? false)) {
+            $total += FeeCalculator::cents($charge['line']['net_amount']);
+        }
+    }
 
     foreach ($this->lines as $id => $line) {
         if (! $line['billed'] && ($this->fees[(string) $id] ?? false)) {
@@ -105,8 +119,9 @@ $total = computed(function () {
 
 // Tick the fees due in the period that haven't been billed, and suggest a due date.
 $preselect = protect(function () {
-    unset($this->student, $this->options, $this->lines);
+    unset($this->student, $this->options, $this->lines, $this->serviceLines);
     $this->fees = [];
+    $this->services = array_map(fn (array $charge) => ! $charge['billed'], $this->serviceLines);
 
     if (! $this->student) {
         return;
@@ -147,6 +162,7 @@ rules(fn () => [
     'issue_date' => ['required', 'date'],
     'due_date' => ['required', 'date', 'after_or_equal:issue_date'],
     'fees' => ['array'],
+    'services' => ['array'],
     'custom' => ['array', 'max:20'],
     'custom.*.description' => ['required', 'string', 'max:255'],
     'custom.*.amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
@@ -166,8 +182,11 @@ $save = function (Invoices $invoices) {
     $chosen = $this->options->filter(fn (FeeStructure $fee) => $data['fees'][(string) $fee->id] ?? false);
     $on = $this->period ? FeeSchedule::periodStart($this->period) : Carbon::parse($data['issue_date']);
 
+    $kinds = array_keys(array_filter($data['services'] ?? []));
+
     $lines = [
         ...$invoices->linesFor($student, $chosen, $this->period, $on),
+        ...($this->period ? app(ServiceCharges::class)->linesFor($student, $this->period, $kinds) : []),
         ...array_map(fn (array $row) => FeeCalculator::customLine($row['description'], $row['amount']), $data['custom']),
     ];
 
@@ -222,6 +241,28 @@ $save = function (Invoices $invoices) {
                                 <td class="text-end">{{ Money::school($line['amount']) }}</td>
                                 <td class="text-end">{{ $line['discount_amount'] > 0 ? '-'.Money::school($line['discount_amount']) : '—' }}</td>
                                 <td class="text-end fw-medium">{{ Money::school($line['net_amount']) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+        @if ($this->serviceLines !== [])
+            <h6 class="mb-2">{{ __('Transport & hostel') }}</h6>
+            <div class="table-responsive mb-3">
+                <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                        @foreach ($this->serviceLines as $kind => $charge)
+                            <tr wire:key="service-{{ $kind }}" @class(['text-muted' => $charge['billed']])>
+                                <td style="width: 2rem">
+                                    <input type="checkbox" class="form-check-input" id="service-{{ $kind }}" wire:model.live="services.{{ $kind }}" @disabled($charge['billed'])>
+                                </td>
+                                <td>
+                                    <label for="service-{{ $kind }}" class="mb-0">{{ $charge['line']['description'] }}</label>
+                                    @if ($charge['billed']) <small class="d-block text-warning">{{ __('already billed') }}</small> @endif
+                                </td>
+                                <td class="text-end fw-medium">{{ Money::school($charge['line']['net_amount']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

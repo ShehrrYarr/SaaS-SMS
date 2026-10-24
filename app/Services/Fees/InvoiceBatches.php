@@ -15,21 +15,22 @@ use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Bulk invoice generation: one billing period, the chosen fees, every active
- * student of the chosen classes (all classes when none are chosen). Runs on
- * the queue and records its progress on the batch for the UI.
+ * Bulk invoice generation: one billing period, the chosen fees (and service
+ * charges: transport fares, hostel fees), every active student of the chosen
+ * classes (all classes when none are chosen). Runs on the queue and records
+ * its progress on the batch for the UI.
  *
- * Students already billed for a fee in that period are skipped for that fee,
- * so a batch can safely be run again for students admitted later.
+ * Students already billed for a fee or service in that period are skipped
+ * for it, so a batch can safely be run again for students admitted later.
  */
 class InvoiceBatches
 {
     private const CHUNK = 100;
 
-    public function __construct(private readonly Invoices $invoices, private readonly FeeSchedule $schedule) {}
+    public function __construct(private readonly Invoices $invoices, private readonly FeeSchedule $schedule, private readonly ServiceCharges $services) {}
 
     /**
-     * @param  array{title: string, billing_period: string, class_ids: list<int>, fee_structure_ids: list<int>, issue_date: string, due_date: string}  $data
+     * @param  array{title: string, billing_period: string, class_ids: list<int>, fee_structure_ids: list<int>, services?: list<string>, issue_date: string, due_date: string}  $data
      *
      * @throws ActionFailed
      */
@@ -56,6 +57,7 @@ class InvoiceBatches
                 'filters' => [
                     'class_ids' => array_values(array_map('intval', $data['class_ids'])),
                     'fee_structure_ids' => array_values(array_map('intval', $data['fee_structure_ids'])),
+                    'services' => array_values(array_intersect($data['services'] ?? [], ServiceCharges::available())),
                     'issue_date' => $data['issue_date'],
                     'due_date' => $data['due_date'],
                 ],
@@ -106,9 +108,14 @@ class InvoiceBatches
             $students = $this->students($filters['class_ids'] ?? []);
             $batch->update(['total_students' => (clone $students)->count()]);
 
-            $students->with('user')->chunkById(self::CHUNK, function ($chunk) use ($batch, $fees, $issue, $due, $periodStart, $by) {
+            $services = $filters['services'] ?? [];
+
+            $students->with('user')->chunkById(self::CHUNK, function ($chunk) use ($batch, $fees, $services, $issue, $due, $periodStart, $by) {
                 foreach ($chunk as $student) {
-                    $lines = $this->invoices->linesFor($student, $fees, $batch->billing_period, $periodStart);
+                    $lines = [
+                        ...$this->invoices->linesFor($student, $fees, $batch->billing_period, $periodStart),
+                        ...$this->services->linesFor($student, $batch->billing_period, $services),
+                    ];
 
                     try {
                         if ($lines === []) {

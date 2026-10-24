@@ -397,3 +397,9 @@ than editing the Herozi partials, so the theme can be updated cleanly.
         color: var(--bs-secondary-color);
     }
 }
+
+// Search-as-you-type results (student, book and borrower pickers) float over
+// the fields below them; the theme's list groups are transparent.
+.list-group.position-absolute {
+    --bs-list-group-bg: var(--bs-body-bg);
+}

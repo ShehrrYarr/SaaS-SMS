@@ -3,8 +3,14 @@
 namespace App\Models;
 
 use App\Enums\AllocationStatus;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * A student staying in a hostel room (and bed) from check-in until they
+ * check out.
+ */
 class StudentHostel extends TenantModel
 {
     protected function casts(): array
@@ -14,6 +20,26 @@ class StudentHostel extends TenantModel
             'check_out' => 'date',
             'status' => AllocationStatus::class,
         ];
+    }
+
+    /**
+     * @param  Builder<StudentHostel>  $query
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where($query->qualifyColumn('status'), AllocationStatus::Active);
+    }
+
+    /**
+     * Stays that cover any day of the month starting $monthStart.
+     *
+     * @param  Builder<StudentHostel>  $query
+     */
+    public function scopeDuringMonth(Builder $query, CarbonInterface $monthStart): void
+    {
+        $query->whereDate($query->qualifyColumn('check_in'), '<=', $monthStart->copy()->endOfMonth()->toDateString())
+            ->where(fn (Builder $query) => $query->whereNull($query->qualifyColumn('check_out'))
+                ->orWhereDate($query->qualifyColumn('check_out'), '>=', $monthStart->copy()->startOfMonth()->toDateString()));
     }
 
     /**
@@ -38,5 +64,10 @@ class StudentHostel extends TenantModel
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === AllocationStatus::Active;
     }
 }

@@ -59,9 +59,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Student and parent portal pages that need a plan feature: homework,
         // results (examinations) and fees (finance).
-        foreach (['homework' => 'homework.view', 'results' => 'examinations.view', 'fees' => 'invoices.view'] as $page => $permission) {
+        foreach (['homework' => 'homework.view', 'results' => 'examinations.view', 'fees' => 'invoices.view', 'library' => 'library.view'] as $page => $permission) {
             Gate::define("self-service-{$page}", fn (User $user) => tenant() !== null && PlanFeatures::allows(tenant()->plan, $permission));
         }
+
+        // Transport & hostel: shown when the plan has either.
+        Gate::define('self-service-services', fn (User $user) => tenant() !== null
+            && (PlanFeatures::allows(tenant()->plan, 'transport.view') || PlanFeatures::allows(tenant()->plan, 'hostel.view')));
+
+        // A staff member's own library loans; the menu only lists the page for
+        // those who have borrowed something.
+        Gate::define('view-own-library', fn (User $user) => tenant() !== null
+            && PlanFeatures::allows(tenant()->plan, 'library.view')
+            && $user->staffProfile()->exists());
+        Gate::define('has-library-loans', fn (User $user) => Gate::forUser($user)->allows('view-own-library') && $user->bookIssues()->exists());
 
         Password::defaults(fn () => Password::min(8)->letters()->numbers());
     }

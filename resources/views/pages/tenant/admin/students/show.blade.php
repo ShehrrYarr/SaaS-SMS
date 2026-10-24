@@ -69,6 +69,14 @@ $canManageAccount = computed(fn () => $this->profile->user
     if (auth()->user()->can('invoices.view')) {
         $tabs['fees'] = __('Fees');
     }
+    $services = array_filter([
+        'transport' => auth()->user()->can('transport.view'),
+        'hostel' => auth()->user()->can('hostel.view'),
+        'library' => auth()->user()->can('library.view'),
+    ]);
+    if ($services !== []) {
+        $tabs['services'] = __('Transport, hostel & library');
+    }
 @endphp
 
 <div>
@@ -322,5 +330,49 @@ $canManageAccount = computed(fn () => $this->profile->user
             @endcan
         </div>
         <livewire:components.data-table :table="App\Tables\InvoicesTable::class" :params="['student' => $student->id]" wire:key="student-invoices-{{ $student->id }}" />
+    @elseif ($tab === 'services' && isset($tabs['services']))
+        @if (isset($services['transport']))
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h5 class="mb-0 flex-grow-1"><i class="ri-bus-2-line me-1 text-muted"></i>{{ __('School transport') }}</h5>
+                @can('transport.manage')
+                    @if ($student->isActive())
+                        <button type="button" class="btn btn-sm btn-light" wire:click="$dispatch('open-modal', @js(['component' => 'forms.student-transport', 'params' => ['student' => $student->id]]))">
+                            <i class="ri-bus-2-line me-1"></i>{{ __('Give or change transport') }}
+                        </button>
+                    @endif
+                @endcan
+            </div>
+            <div class="mb-5">
+                <livewire:components.data-table :table="App\Tables\StudentTransportsTable::class" :params="['student' => $student->id]" wire:key="student-transport-{{ $student->id }}" />
+            </div>
+        @endif
+        @if (isset($services['hostel']))
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h5 class="mb-0 flex-grow-1"><i class="ri-hotel-bed-line me-1 text-muted"></i>{{ __('Hostel') }}</h5>
+                @can('hostel.manage')
+                    @if ($student->isActive())
+                        <button type="button" class="btn btn-sm btn-light" wire:click="$dispatch('open-modal', @js(['component' => 'forms.student-hostel', 'params' => ['student' => $student->id]]))">
+                            <i class="ri-hotel-bed-line me-1"></i>{{ __('Allocate or move room') }}
+                        </button>
+                    @endif
+                @endcan
+            </div>
+            <div class="mb-5">
+                <livewire:components.data-table :table="App\Tables\StudentHostelsTable::class" :params="['student' => $student->id]" wire:key="student-hostel-{{ $student->id }}" />
+            </div>
+        @endif
+        @if (isset($services['library']) && $student->user_id)
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h5 class="mb-0 flex-grow-1"><i class="ri-book-2-line me-1 text-muted"></i>{{ __('Library books out') }}</h5>
+                @can('library.issue')
+                    @if ($student->isActive())
+                        <button type="button" class="btn btn-sm btn-light" wire:click="$dispatch('open-modal', @js(['component' => 'forms.book-issue', 'params' => ['borrower' => $student->user_id]]))">
+                            <i class="ri-arrow-right-up-line me-1"></i>{{ __('Issue a book') }}
+                        </button>
+                    @endif
+                @endcan
+            </div>
+            <livewire:components.data-table :table="App\Tables\BookIssuesTable::class" :params="['scope' => 'loans', 'user' => $student->user_id]" wire:key="student-library-{{ $student->id }}" />
+        @endif
     @endif
 </div>

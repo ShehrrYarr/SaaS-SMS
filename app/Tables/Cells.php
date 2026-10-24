@@ -35,6 +35,26 @@ class Cells
     }
 
     /**
+     * A library borrower: a student (admission number and class) or a member
+     * of staff (designation). Eager-load studentProfile.schoolClass,
+     * studentProfile.section and staffProfile.
+     */
+    public static function borrower(?User $user): HtmlString
+    {
+        if (! $user) {
+            return static::person(null);
+        }
+
+        $student = $user->studentProfile;
+
+        $subtitle = $student
+            ? collect([$student->admission_number, $student->placementLabel()])->filter()->implode(' · ')
+            : collect([__('Staff'), $user->staffProfile?->designation])->filter()->implode(' · ');
+
+        return static::person($user, $subtitle);
+    }
+
+    /**
      * Name and phone (or email) on two lines.
      */
     public static function contact(?User $user, ?string $extra = null): ?HtmlString

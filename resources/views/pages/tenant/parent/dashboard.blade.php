@@ -49,6 +49,10 @@ $overview = computed(function () {
         'latest' => $results ? $service->latestResult($student) : null,
         'fees' => StudentOverview::enabled('invoices.view') ? $service->fees($student) : null,
         'remarks' => $service->remarks($student),
+        // Null when the plan leaves the service out; ['current' => null] when the student doesn't use it.
+        'transport' => StudentOverview::enabled('transport.view') ? ['current' => $service->transport($student)] : null,
+        'hostel' => StudentOverview::enabled('hostel.view') ? ['current' => $service->hostel($student)] : null,
+        'library' => StudentOverview::enabled('library.view') ? $service->library($student->user, 0) : null,
     ];
 });
 
@@ -126,6 +130,12 @@ $switchChild = function (int $child) {
             @endif
             <div class="col-xl-4"><x-timetable.today :entries="$data['today']" :title="__('Today\'s classes')" /></div>
         </div>
+
+        @if ($data['transport'] || $data['hostel'] || $data['library'])
+            <div class="row g-4 mb-4">
+                <div class="col-xl-4"><x-family.services-card :transport="$data['transport']" :hostel="$data['hostel']" :library="$data['library']" portal="parent" /></div>
+            </div>
+        @endif
     @endif
 
     <x-notices.latest />

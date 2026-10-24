@@ -77,6 +77,16 @@ abstract class Table
         return [null, 'asc'];
     }
 
+    /**
+     * Filter values the table opens with (filter key => option value).
+     *
+     * @return array<string, string>
+     */
+    public function defaultFilters(): array
+    {
+        return [];
+    }
+
     public function searchPlaceholder(): string
     {
         return __('Search…');

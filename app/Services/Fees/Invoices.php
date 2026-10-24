@@ -11,6 +11,7 @@ use App\Models\InvoiceItem;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\Attendance\SchoolCalendar;
+use App\Services\Library\Library;
 use App\Services\Numbering\Sequences;
 use App\Tables\ActionFailed;
 use Carbon\CarbonInterface;
@@ -88,7 +89,7 @@ class Invoices
     }
 
     /**
-     * @param  list<array<string, mixed>>  $lines  from linesFor() / FeeCalculator
+     * @param  list<array<string, mixed>>  $lines  from linesFor() / FeeCalculator / ServiceCharges
      *
      * @throws ActionFailed
      */
@@ -137,6 +138,8 @@ class Invoices
 
             $invoice->items()->createMany(array_map(fn (array $line) => [
                 'fee_structure_id' => $line['fee_structure_id'],
+                'billable_type' => $line['billable_type'] ?? null,
+                'billable_id' => $line['billable_id'] ?? null,
                 'description' => mb_substr($line['description'], 0, 255),
                 'amount' => $line['amount'],
                 'discount_amount' => $line['discount_amount'],
@@ -245,6 +248,9 @@ class Invoices
             'cancelled_at' => now(),
             'cancel_reason' => trim($reason),
         ]);
+
+        // A library fine billed on this invoice is owed at the library again.
+        Library::invoiceCancelled($invoice);
 
         activity('invoice')->performedOn($invoice)->causedBy($by)->withProperties(['reason' => trim($reason)])->log('Invoice cancelled');
     }

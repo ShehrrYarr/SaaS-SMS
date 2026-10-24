@@ -9,12 +9,16 @@ use App\Enums\UserType;
 use App\Models\AcademicYear;
 use App\Models\ParentProfile;
 use App\Models\StudentEnrollment;
+use App\Models\StudentHostel;
 use App\Models\StudentProfile;
+use App\Models\StudentTransport;
 use App\Models\User;
 use App\Services\Billing\PlanLimits;
+use App\Services\Hostel\Hostels;
 use App\Services\Numbering\Sequences;
 use App\Services\People\Accounts;
 use App\Services\People\Credentials;
+use App\Services\Transport\Transport;
 use App\Tables\ActionFailed;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +46,8 @@ class StudentRecords
         private readonly Accounts $accounts,
         private readonly Sequences $sequences,
         private readonly Guardians $guardians,
+        private readonly Transport $transport,
+        private readonly Hostels $hostels,
     ) {}
 
     /**
@@ -187,6 +193,10 @@ class StudentRecords
                 } + ($remarks ? ['remarks' => $remarks] : []));
             }
 
+            if (in_array($status, [StudentStatus::Graduated, StudentStatus::Transferred, StudentStatus::Left], true)) {
+                $this->endServices($student, $on ?? tenant()->today(), $by);
+            }
+
             activity('student_profile')->performedOn($student)->causedBy($by)
                 ->withProperties(array_filter(['from' => $from->value, 'to' => $status->value, 'on' => $on?->toDateString(), 'remarks' => $remarks]))
                 ->log('Student status changed');
@@ -204,9 +214,25 @@ class StudentRecords
                 ->withProperties(['admission_number' => $student->admission_number, 'name' => $student->user?->name])
                 ->log('Student deleted');
 
+            $this->endServices($student, tenant()->today(), $by);
             $student->delete();
             $student->user?->delete();
         });
+    }
+
+    /**
+     * A student who leaves stops riding school transport and checks out of
+     * the hostel (on the day they left, or the day those started if later).
+     */
+    private function endServices(StudentProfile $student, Carbon $on, ?User $by): void
+    {
+        foreach (StudentTransport::query()->active()->where('student_profile_id', $student->id)->get() as $assignment) {
+            $this->transport->end($assignment, $on->toDateString() < $assignment->start_date->toDateString() ? $assignment->start_date : $on, $by, notify: false);
+        }
+
+        foreach (StudentHostel::query()->active()->where('student_profile_id', $student->id)->get() as $stay) {
+            $this->hostels->checkOut($stay, $on->toDateString() < $stay->check_in->toDateString() ? $stay->check_in : $on, $by, notify: false);
+        }
     }
 
     /**

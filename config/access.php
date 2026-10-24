@@ -149,6 +149,14 @@ return [
             'description' => 'Library catalogue and book issuing.',
             'permissions' => ['portal.admin', 'library.*', 'students.view', 'leave.apply'],
         ],
+        'Transport Manager' => [
+            'description' => 'Vehicles, bus routes and which students ride them.',
+            'permissions' => ['portal.admin', 'transport.*', 'students.view', 'leave.apply'],
+        ],
+        'Hostel Warden' => [
+            'description' => 'Hostel buildings, rooms and residents.',
+            'permissions' => ['portal.admin', 'hostel.*', 'students.view', 'leave.apply'],
+        ],
         'Student' => [
             'description' => 'Student self-service portal.',
             'permissions' => ['portal.student'],

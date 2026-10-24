@@ -3,10 +3,12 @@
 namespace App\Services\Portals;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\BookIssueStatus;
 use App\Enums\ExamStatus;
 use App\Enums\HomeworkStatus;
 use App\Enums\SubmissionStatus;
 use App\Models\AcademicYear;
+use App\Models\BookIssue;
 use App\Models\Examination;
 use App\Models\ExamRemark;
 use App\Models\Homework;
@@ -15,8 +17,11 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\StudentAttendance;
 use App\Models\StudentEnrollment;
+use App\Models\StudentHostel;
 use App\Models\StudentProfile;
+use App\Models\StudentTransport;
 use App\Models\Timetable;
+use App\Models\User;
 use App\Services\Exams\ResultSheet;
 use App\Services\Timetable\Timetables;
 use App\Support\Billing\PlanFeatures;
@@ -245,6 +250,53 @@ class StudentOverview
             ]);
 
         return $exam->concat($homework)->sortByDesc(fn (array $remark) => $remark['at']?->timestamp ?? 0)->take($limit)->values();
+    }
+
+    /**
+     * Library loans of a borrower (a student's account, or a member of
+     * staff): books out now, earlier loans and fines owed.
+     *
+     * @return array{out: Collection<int, BookIssue>, overdue: int, history: Collection<int, BookIssue>, owed: float}
+     */
+    public function library(?User $borrower, int $history = 20): array
+    {
+        if (! $borrower) {
+            return ['out' => collect(), 'overdue' => 0, 'history' => collect(), 'owed' => 0.0];
+        }
+
+        $book = ['book' => fn ($query) => $query->withTrashed()];
+        $out = BookIssue::query()->out()->with($book)->where('user_id', $borrower->id)->orderBy('due_on')->get();
+
+        return [
+            'out' => $out,
+            'overdue' => $out->filter(fn (BookIssue $issue) => $issue->isOverdue())->count(),
+            'history' => BookIssue::query()->with([...$book, 'invoice'])->where('user_id', $borrower->id)
+                ->where('status', '!=', BookIssueStatus::Issued)
+                ->latest('returned_on')->latest('id')->limit($history)->get(),
+            'owed' => (float) BookIssue::query()->fineOwed()->where('user_id', $borrower->id)->sum('fine_amount'),
+        ];
+    }
+
+    /**
+     * The route the student rides now, with its vehicle.
+     */
+    public function transport(StudentProfile $student): ?StudentTransport
+    {
+        return StudentTransport::query()->active()
+            ->with(['route' => fn ($query) => $query->withTrashed()->with('vehicle')])
+            ->where('student_profile_id', $student->id)
+            ->first();
+    }
+
+    /**
+     * The hostel room the student stays in now, with its building and warden.
+     */
+    public function hostel(StudentProfile $student): ?StudentHostel
+    {
+        return StudentHostel::query()->active()
+            ->with(['room' => fn ($query) => $query->withTrashed()->with(['building' => fn ($query) => $query->withTrashed()->with('warden.user')])])
+            ->where('student_profile_id', $student->id)
+            ->first();
     }
 
     /**

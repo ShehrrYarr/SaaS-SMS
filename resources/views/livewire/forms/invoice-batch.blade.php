@@ -10,6 +10,7 @@ use App\Models\FeeStructure;
 use App\Models\SchoolClass;
 use App\Services\Fees\FeeSchedule;
 use App\Services\Fees\InvoiceBatches;
+use App\Services\Fees\ServiceCharges;
 use App\Support\Billing\Money;
 use App\Tables\ActionFailed;
 use Illuminate\Support\Carbon;
@@ -22,6 +23,7 @@ state([
     'billing_period' => '', 'title' => '', 'issue_date' => '', 'due_date' => '',
     'class_ids' => [],  // strings; none = every class
     'fee_ids' => [],    // strings
+    'services' => [],   // transport, hostel
 ]);
 
 mount(function () {
@@ -43,6 +45,14 @@ $fees = computed(fn () => $this->period
 
 $studentCount = computed(fn () => app(InvoiceBatches::class)->students($this->class_ids)->count());
 
+// Transport fares and hostel fees the plan includes, with how many students used each this month.
+$serviceOptions = computed(fn () => $this->period
+    ? collect(ServiceCharges::available())->mapWithKeys(fn (string $kind) => [$kind => [
+        'label' => ServiceCharges::label($kind),
+        'students' => app(ServiceCharges::class)->usersCount($kind, $this->period, $this->class_ids),
+    ]])->all()
+    : []);
+
 // Tick the fees due in the month, name the run, and suggest a due date.
 $preselect = protect(function () {
     unset($this->fees);
@@ -56,6 +66,7 @@ $preselect = protect(function () {
     $due = $this->fees->filter(fn (FeeStructure $fee) => $schedule->isDue($fee, $this->period, $year));
 
     $this->fee_ids = $due->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
+    $this->services = ServiceCharges::available();
     $this->title = __(':period fees', ['period' => FeeSchedule::periodLabel($this->period)]);
     $this->due_date = $schedule->dueDateFor($this->period, $due)->max(Carbon::parse($this->issue_date ?: tenant()->today()))->toDateString();
 });
@@ -69,15 +80,17 @@ rules(fn () => [
     'due_date' => ['required', 'date', 'after_or_equal:issue_date'],
     'class_ids' => ['array'],
     'class_ids.*' => ['in:'.implode(',', array_keys($this->classes))],
-    'fee_ids' => ['required', 'array', 'min:1'],
+    'fee_ids' => [$this->services === [] ? 'required' : 'nullable', 'array', ...($this->services === [] ? ['min:1'] : [])],
     'fee_ids.*' => ['in:'.$this->fees->pluck('id')->implode(',')],
+    'services' => ['array'],
+    'services.*' => ['in:'.implode(',', ServiceCharges::available())],
 ])->attributes([
     'billing_period' => __('month'),
     'fee_ids' => __('fees'),
     'class_ids' => __('classes'),
 ])->messages([
-    'fee_ids.required' => __('Choose at least one fee to bill.'),
-    'fee_ids.min' => __('Choose at least one fee to bill.'),
+    'fee_ids.required' => __('Choose at least one fee or service to bill.'),
+    'fee_ids.min' => __('Choose at least one fee or service to bill.'),
 ]);
 
 $save = function (InvoiceBatches $batches) {
@@ -89,7 +102,8 @@ $save = function (InvoiceBatches $batches) {
             'title' => $data['title'],
             'billing_period' => $data['billing_period'],
             'class_ids' => array_map('intval', $data['class_ids']),
-            'fee_structure_ids' => array_map('intval', $data['fee_ids']),
+            'fee_structure_ids' => array_map('intval', $data['fee_ids'] ?? []),
+            'services' => array_values($data['services']),
             'issue_date' => $data['issue_date'],
             'due_date' => $data['due_date'],
         ], auth()->user());
@@ -130,6 +144,21 @@ $save = function (InvoiceBatches $batches) {
         @error('fee_ids') <div class="text-danger fs-13 mt-1">{{ $message }}</div> @enderror
         <div class="form-text">{{ __('Fees due this month are ticked. Students already billed for a fee this month are skipped for it.') }}</div>
     </fieldset>
+
+    @if ($this->serviceOptions !== [])
+        <fieldset class="mb-4">
+            <legend class="form-label fs-14">{{ __('Services') }}</legend>
+            @foreach ($this->serviceOptions as $kind => $option)
+                <div class="form-check" wire:key="batch-service-{{ $kind }}">
+                    <input class="form-check-input" type="checkbox" id="batch-service-{{ $kind }}" value="{{ $kind }}" wire:model="services">
+                    <label class="form-check-label" for="batch-service-{{ $kind }}">
+                        {{ $option['label'] }} <span class="text-muted">· {{ trans_choice(':count student this month|:count students this month', $option['students'], ['count' => $option['students']]) }}</span>
+                    </label>
+                </div>
+            @endforeach
+            <div class="form-text">{{ __('Each student\'s route fare or room fee for the month, for the route or room they had last that month.') }}</div>
+        </fieldset>
+    @endif
 
     <fieldset class="mb-3">
         <legend class="form-label fs-14">{{ __('Classes') }}</legend>

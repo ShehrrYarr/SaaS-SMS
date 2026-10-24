@@ -45,6 +45,7 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
             $selfServiceRoutes = function () {
                 Volt::route('my/leave', 'tenant.me.leave')->middleware('can:leave.apply')->name('my-leave');
                 Volt::route('my/payslips', 'tenant.me.payslips')->middleware('can:view-own-payslips')->name('my-payslips');
+                Volt::route('my/library', 'tenant.me.library')->middleware('can:view-own-library')->name('my-library');
             };
 
             // The student and parent portals: one student's records (the parent's
@@ -56,6 +57,8 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
                 Volt::route('homework/{homework}', 'tenant.family.homework.show')->middleware('can:self-service-homework')->whereNumber('homework')->name('homework.show');
                 Volt::route('results', 'tenant.family.results')->middleware('can:self-service-results')->name('results');
                 Volt::route('fees', 'tenant.family.fees')->middleware('can:self-service-fees')->name('fees');
+                Volt::route('library', 'tenant.family.library')->middleware('can:self-service-library')->name('library');
+                Volt::route('transport-hostel', 'tenant.family.services')->middleware('can:self-service-services')->name('services');
 
                 Route::controller(FamilyDocumentController::class)->whereNumber(['invoice', 'payment', 'examination', 'student'])->group(function () {
                     Route::get('invoices/{invoice}', 'invoice')->name('invoices.document');
@@ -127,6 +130,12 @@ Route::prefix('{'.config('tenancy.route_parameter').'}')
 
                 // Communication
                 Volt::route('notices', 'tenant.admin.notices.index')->middleware('can:notices.view')->name('notices.index');
+
+                // Operations
+                Volt::route('library', 'tenant.admin.library.index')->middleware('can:library.view')->name('library.index');
+                Volt::route('transport', 'tenant.admin.transport.index')->middleware('can:transport.view')->name('transport.index');
+                Volt::route('transport/routes/{transportRoute}', 'tenant.admin.transport.route')->middleware('can:transport.view')->whereNumber('transportRoute')->name('transport.routes.show');
+                Volt::route('hostel', 'tenant.admin.hostel.index')->middleware('can:hostel.view')->name('hostel.index');
 
                 // Administration
                 Volt::route('roles', 'tenant.admin.roles.index')->middleware('can:roles.view')->name('roles.index');
