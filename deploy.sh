@@ -24,7 +24,11 @@ php artisan access:sync
 
 echo "==> Caches"
 php artisan optimize:clear
-php artisan optimize
+# No route:cache (so not `optimize`): the compiled matcher lets the {school}
+# route, whose pattern uses a lookahead, capture "/" and hide the landing page.
+php artisan config:cache
+php artisan event:cache
+php artisan view:cache
 php artisan queue:restart
 
 # The web server and the scheduler run as www-data.
