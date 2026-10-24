@@ -8,8 +8,12 @@ set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")"
 
-echo "==> Pulling master"
-git pull --ff-only origin master
+# Pull first, then restart with the freshly pulled copy of this script.
+if [ "${1:-}" != "--pulled" ]; then
+    echo "==> Pulling master"
+    git pull --ff-only origin master
+    exec bash "$(readlink -f "$0")" --pulled
+fi
 
 echo "==> PHP dependencies"
 composer install --no-dev --optimize-autoloader --no-interaction --no-progress
