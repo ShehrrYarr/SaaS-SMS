@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Exceptions\DemoLocked;
 use App\Http\Middleware\EnsureAccountIsUsable;
 use App\Http\Middleware\EnsureCentralContext;
 use App\Http\Middleware\EnsurePortalAccess;
@@ -11,6 +12,7 @@ use App\Models;
 use App\Models\School;
 use App\Models\User;
 use App\Support\Billing\PlanFeatures;
+use App\Support\Demo;
 use App\Tenancy\TenantContext;
 use App\Tenancy\TenantUserProvider;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +24,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Livewire\Component;
 use Livewire\Livewire;
+
+use function Livewire\on;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -75,6 +80,24 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('has-library-loans', fn (User $user) => Gate::forUser($user)->allows('view-own-library') && $user->bookIssues()->exists());
 
         Password::defaults(fn () => Password::min(8)->letters()->numbers());
+
+        $this->registerDemo();
+    }
+
+    /**
+     * The public demo's locks; a blocked change inside a Livewire action shows
+     * as a warning toast instead of an error page.
+     */
+    private function registerDemo(): void
+    {
+        Demo::guardModels();
+
+        on('exception', function ($component, \Throwable $e, callable $stopPropagation) {
+            if ($e instanceof DemoLocked && $component instanceof Component) {
+                $component->dispatch('notify', type: 'warning', message: $e->getMessage());
+                $stopPropagation();
+            }
+        });
     }
 
     private function registerTenancy(): void

@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\DemoLocked;
+use App\Support\Demo;
 use App\Support\Portal;
 use Illuminate\Validation\Rules\Password;
 
@@ -16,6 +18,8 @@ rules(fn () => [
 ]);
 
 $save = function () {
+    throw_if(Demo::locked(), DemoLocked::signIns());
+
     $this->validate();
 
     $user = auth()->user();
@@ -41,6 +45,10 @@ $save = function () {
         </p>
     </div>
 
+    @if (Demo::locked())
+        <div class="alert alert-info d-flex gap-2 mt-6 mb-0"><i class="ri-lock-line fs-5 lh-1"></i>{{ DemoLocked::signIns()->getMessage() }}</div>
+        <a href="{{ route('tenant.home') }}" class="btn btn-primary rounded-2 w-100 mt-5">{{ __('Back') }}</a>
+    @else
     <form wire:submit="save" class="form-custom mt-6" novalidate>
         @foreach ([
             'current_password' => [__('Current password'), 'current-password'],
@@ -69,4 +77,5 @@ $save = function () {
             <a href="{{ route('tenant.home') }}" class="btn btn-link w-100 mt-2">{{ __('Cancel') }}</a>
         @endunless
     </form>
+    @endif
 </div>

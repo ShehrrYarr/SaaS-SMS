@@ -8,7 +8,9 @@
  */
 
 use App\Enums\LateFeeType;
+use App\Exceptions\DemoLocked;
 use App\Livewire\Concerns\InteractsWithUi;
+use App\Support\Demo;
 use App\Support\Locale\LocaleOptions;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -44,7 +46,7 @@ state([
 
 mount(function () {
     $this->authorize('settings.view');
-    $this->canEdit = auth()->user()->can('settings.edit');
+    $this->canEdit = auth()->user()->can('settings.edit') && ! Demo::locked();
 
     $school = tenant();
 
@@ -121,6 +123,7 @@ $ruleGroups = protect(fn () => [
 
 $save = function () {
     $this->authorize('settings.edit');
+    throw_if(Demo::locked(), DemoLocked::settings());
 
     $groups = $this->ruleGroups();
 
@@ -233,9 +236,11 @@ $save = function () {
 <div>
     <x-page-header :title="__('School settings')" :breadcrumbs="[__('School Admin') => route('admin.dashboard'), __('Administration') => null, __('School settings') => null]" />
 
-    @unless ($canEdit)
+    @if (Demo::locked())
+        <div class="alert alert-info d-flex gap-2"><i class="ri-lock-line fs-5 lh-1"></i>{{ DemoLocked::settings()->getMessage() }}</div>
+    @elseif (! $canEdit)
         <div class="alert alert-light border d-flex gap-2"><i class="ri-eye-line fs-5 lh-1"></i>{{ __('You can view these settings but not change them.') }}</div>
-    @endunless
+    @endif
 
     <form wire:submit="save" class="row g-4" novalidate>
         <div class="col-lg-3">
