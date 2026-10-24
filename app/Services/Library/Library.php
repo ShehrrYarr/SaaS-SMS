@@ -333,6 +333,52 @@ class Library
     }
 
     /**
+     * The daily reminders for the active school: books due tomorrow, and
+     * books that have just become overdue (each loan is told once).
+     *
+     * @return int reminders sent
+     */
+    public function sendReminders(?CarbonInterface $today = null): int
+    {
+        $today ??= tenant()->today();
+        $format = tenant()->setting('date_format');
+        $sent = 0;
+
+        BookIssue::query()->out()->with(['book' => fn ($query) => $query->withTrashed(), 'borrower'])
+            ->whereDate('due_on', $today->copy()->addDay()->toDateString())
+            ->whereNull('reminded_at')
+            ->chunkById(200, function ($issues) use ($format, &$sent) {
+                foreach ($issues as $issue) {
+                    $this->tell($issue,
+                        __('Library book due tomorrow: :title', ['title' => $issue->book?->title]),
+                        __('Please return it by :date.', ['date' => $issue->due_on->format($format)]),
+                        'warning');
+                    $issue->update(['reminded_at' => now()]);
+                    $sent++;
+                }
+            });
+
+        BookIssue::query()->overdue($today)->with(['book' => fn ($query) => $query->withTrashed(), 'borrower'])
+            ->whereNull('overdue_notified_at')
+            ->chunkById(200, function ($issues) use ($format, &$sent) {
+                $fine = self::settings()['fine_per_day'];
+
+                foreach ($issues as $issue) {
+                    $this->tell($issue,
+                        __('Library book overdue: :title', ['title' => $issue->book?->title]),
+                        $fine > 0
+                            ? __('It was due on :date. A fine is charged for each day late.', ['date' => $issue->due_on->format($format)])
+                            : __('It was due on :date. Please return it.', ['date' => $issue->due_on->format($format)]),
+                        'danger');
+                    $issue->update(['overdue_notified_at' => now()]);
+                    $sent++;
+                }
+            });
+
+        return $sent;
+    }
+
+    /**
      * Notify the borrower (and a student's parents) about a loan.
      */
     public function tell(BookIssue $issue, string $title, string $message, string $color = 'info'): void

@@ -33,12 +33,16 @@ class Money
 
     /**
      * "$1,250.00" in the active school's currency symbol; negative amounts
-     * as "-$20.00".
+     * as "-$20.00". A symbol written in letters is spaced: "Rs 1,250.00".
      */
     public static function school(float|int|string|null $amount): string
     {
         $amount = round((float) ($amount ?? 0), 2);
-        $symbol = (string) (tenant()?->setting('currency_symbol') ?? '');
+        $symbol = trim((string) (tenant()?->setting('currency_symbol') ?? ''));
+
+        if (preg_match('/\p{L}$/u', $symbol)) {
+            $symbol .= ' ';
+        }
 
         return ($amount < 0 ? '-' : '').$symbol.number_format(abs($amount), 2);
     }

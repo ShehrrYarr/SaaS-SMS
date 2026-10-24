@@ -26,6 +26,7 @@ use App\Services\Fees\Invoices;
 use App\Services\Fees\LateFees;
 use App\Services\Schools\SeedSchoolDefaults;
 use App\Services\Students\StudentRecords;
+use App\Support\Billing\Money;
 use App\Tables\ActionFailed;
 use Illuminate\Support\Carbon;
 use Livewire\Volt\Volt;
@@ -229,6 +230,37 @@ it('marks overdue invoices and charges late fees nightly', function () {
         ->and((float) $invoice->fresh()->late_fee_amount)->toBe(75.0)
         ->and($paid->fresh()->status)->toBe(InvoiceStatus::Paid)
         ->and((float) $paid->fresh()->late_fee_amount)->toBe(0.0);
+});
+
+it('counts days late on the school\'s calendar, whatever its timezone', function () {
+    setFees(['late_fee' => ['enabled' => true, 'type' => 'fixed', 'amount' => 100, 'grace_days' => 5, 'max_amount' => null]]);
+    $invoice = raise($this->ali, [$this->tuition], due: '2026-10-10');
+    $lateFees = app(LateFees::class);
+
+    // Lahore is ahead of UTC: the 16th is the first day past five days' grace.
+    expect($lateFees->amountFor($invoice, Carbon::parse('2026-10-15', 'Asia/Karachi')))->toBe(0.0)
+        ->and($lateFees->amountFor($invoice, Carbon::parse('2026-10-16', 'Asia/Karachi')))->toBe(100.0);
+
+    // New York is behind it: not overdue on the due date itself.
+    app(Invoices::class)->refresh($invoice, Carbon::parse('2026-10-10', 'America/New_York'));
+    expect($invoice->status)->not->toBe(InvoiceStatus::Overdue);
+
+    app(Invoices::class)->refresh($invoice, Carbon::parse('2026-10-11', 'America/New_York'));
+    expect($invoice->status)->toBe(InvoiceStatus::Overdue);
+});
+
+it('spaces a currency symbol written in letters', function () {
+    $currency = function (string $symbol) {
+        $this->school->update(['settings' => [...($this->school->settings ?? []), 'currency_symbol' => $symbol]]);
+        tenancy()->set($this->school->fresh());
+    };
+
+    $currency('$');
+    expect(Money::school(1250))->toBe('$1,250.00');
+
+    $currency('Rs');
+    expect(Money::school(1250))->toBe('Rs 1,250.00')
+        ->and(Money::school(-20))->toBe('-Rs 20.00');
 });
 
 it('generates a month\'s invoices for whole classes on the queue', function () {

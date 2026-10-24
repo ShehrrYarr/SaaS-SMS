@@ -7,6 +7,7 @@ use App\Models\FeeStructure;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 
 /**
  * Late-fee fines on unpaid invoices (Settings → Fee options).
@@ -25,6 +26,29 @@ use Carbon\CarbonInterface;
 class LateFees
 {
     public function __construct(private readonly Invoices $invoices) {}
+
+    /**
+     * The nightly run for the active school: invoices past their due date
+     * become overdue and take their late fees.
+     *
+     * @return int invoices updated
+     */
+    public function applyOverdue(?CarbonInterface $today = null): int
+    {
+        $today ??= tenant()->today();
+        $updated = 0;
+
+        Invoice::query()
+            ->open()
+            ->whereDate('due_date', '<', $today)
+            ->chunkById(200, function ($invoices) use ($today, &$updated) {
+                foreach ($invoices as $invoice) {
+                    $updated += (int) $this->apply($invoice, $today);
+                }
+            });
+
+        return $updated;
+    }
 
     public function amountFor(Invoice $invoice, CarbonInterface $today): float
     {
@@ -107,7 +131,10 @@ class LateFees
             return 0;
         }
 
-        $daysLate = (int) $invoice->due_date->copy()->startOfDay()->diffInDays($today->copy()->startOfDay(), false) - $rule['grace'];
+        // Calendar days, compared as dates: the due date is stored without a
+        // time and "today" is the school's, so instants would drift by the
+        // school's UTC offset.
+        $daysLate = (int) Carbon::parse($invoice->due_date->toDateString())->diffInDays(Carbon::parse($today->toDateString()), false) - $rule['grace'];
 
         if ($daysLate < 1) {
             return 0;

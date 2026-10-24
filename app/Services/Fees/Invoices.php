@@ -107,7 +107,7 @@ class Invoices
             throw new ActionFailed(__('There is nothing to bill.'));
         }
 
-        if ($dueDate->lt($issueDate->copy()->startOfDay())) {
+        if ($dueDate->toDateString() < $issueDate->toDateString()) {
             throw new ActionFailed(__('The due date can\'t be before the issue date.'));
         }
 
@@ -176,7 +176,7 @@ class Invoices
 
         $invoice->status = match (true) {
             $owed <= 0 => InvoiceStatus::Paid,
-            $invoice->due_date->copy()->startOfDay()->lt($today->copy()->startOfDay()) => InvoiceStatus::Overdue,
+            $invoice->due_date->toDateString() < $today->toDateString() => InvoiceStatus::Overdue,
             FeeCalculator::cents($invoice->paid_amount) > 0 => InvoiceStatus::Partial,
             default => InvoiceStatus::Unpaid,
         };

@@ -6,6 +6,7 @@
  */
 
 use App\Enums\AttendanceStatus;
+use App\Services\Attendance\SchoolCalendar;
 use App\Services\Attendance\StudentAttendanceRegister;
 
 use function Livewire\Volt\{computed, layout, mount, on, state, title};
@@ -40,6 +41,7 @@ $open = function (string $key) {
 
 @php
     $valid = (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $date);
+    $closed = $valid && app(SchoolCalendar::class)->isWeeklyOff(Illuminate\Support\Carbon::parse($date));
     $totals = ['students' => 0, 'taken' => 0, 'present' => 0, 'absent' => 0];
     foreach ($this->groups as $key => $item) {
         $counts = $this->summary->get($key, []);
@@ -74,6 +76,10 @@ $open = function (string $key) {
             @endif
         </div>
     </div>
+
+    @if ($closed && ! $group)
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-4"><i class="ri-calendar-event-line"></i>{{ __('This is a weekly off day for the school.') }}</div>
+    @endif
 
     @if ($group && $valid)
         <livewire:attendance.student-register :group-key="$group" :date="$date" :key="'admin-register-'.$group.'-'.$date" />
@@ -119,7 +125,9 @@ $open = function (string $key) {
                                         </td>
                                     @endforeach
                                     <td>
-                                        @if ($taken === 0)
+                                        @if ($taken === 0 && $closed)
+                                            <span class="badge bg-light text-muted">{{ __('School closed') }}</span>
+                                        @elseif ($taken === 0)
                                             <span class="badge bg-warning-subtle text-warning">{{ __('Not taken') }}</span>
                                         @elseif ($taken < $this->sizes->get($key, 0))
                                             <span class="badge bg-info-subtle text-info">{{ __('Partly taken') }}</span>

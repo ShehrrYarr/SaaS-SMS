@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Invoice;
 use App\Models\School;
 use App\Services\Fees\LateFees;
 use Illuminate\Console\Attributes\AsCommand;
@@ -29,18 +28,7 @@ class ApplyLateFees extends Command
                 return;
             }
 
-            tenancy()->run($school, function () use ($school, $lateFees, &$updated) {
-                $today = $school->today();
-
-                Invoice::query()
-                    ->open()
-                    ->whereDate('due_date', '<', $today)
-                    ->chunkById(200, function ($invoices) use ($lateFees, $today, &$updated) {
-                        foreach ($invoices as $invoice) {
-                            $updated += (int) $lateFees->apply($invoice, $today);
-                        }
-                    });
-            });
+            $updated += tenancy()->run($school, fn () => $lateFees->applyOverdue($school->today()));
         });
 
         $this->info("Updated {$updated} invoice(s).");

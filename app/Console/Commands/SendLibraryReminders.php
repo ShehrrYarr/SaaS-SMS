@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\BookIssue;
 use App\Models\School;
 use App\Services\Library\Library;
 use App\Support\Billing\PlanFeatures;
@@ -30,41 +29,7 @@ class SendLibraryReminders extends Command
                 return;
             }
 
-            tenancy()->run($school, function () use ($school, $library, &$sent) {
-                $today = $school->today();
-                $format = $school->setting('date_format');
-
-                BookIssue::query()->out()->with(['book' => fn ($query) => $query->withTrashed(), 'borrower'])
-                    ->whereDate('due_on', $today->copy()->addDay()->toDateString())
-                    ->whereNull('reminded_at')
-                    ->chunkById(200, function ($issues) use ($library, $format, &$sent) {
-                        foreach ($issues as $issue) {
-                            $library->tell($issue,
-                                __('Library book due tomorrow: :title', ['title' => $issue->book?->title]),
-                                __('Please return it by :date.', ['date' => $issue->due_on->format($format)]),
-                                'warning');
-                            $issue->update(['reminded_at' => now()]);
-                            $sent++;
-                        }
-                    });
-
-                BookIssue::query()->overdue($today)->with(['book' => fn ($query) => $query->withTrashed(), 'borrower'])
-                    ->whereNull('overdue_notified_at')
-                    ->chunkById(200, function ($issues) use ($library, $format, &$sent) {
-                        $fine = Library::settings()['fine_per_day'];
-
-                        foreach ($issues as $issue) {
-                            $library->tell($issue,
-                                __('Library book overdue: :title', ['title' => $issue->book?->title]),
-                                $fine > 0
-                                    ? __('It was due on :date. A fine is charged for each day late.', ['date' => $issue->due_on->format($format)])
-                                    : __('It was due on :date. Please return it.', ['date' => $issue->due_on->format($format)]),
-                                'danger');
-                            $issue->update(['overdue_notified_at' => now()]);
-                            $sent++;
-                        }
-                    });
-            });
+            $sent += tenancy()->run($school, fn () => $library->sendReminders($school->today()));
         });
 
         $this->info("Sent {$sent} reminder(s).");

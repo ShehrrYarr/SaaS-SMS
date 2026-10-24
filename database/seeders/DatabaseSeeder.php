@@ -17,8 +17,9 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
         ]);
 
+        // On a server, build the demo with `php artisan demo:seed` instead.
         if (app()->isLocal()) {
-            $this->call(DemoSchoolSeeder::class);
+            $this->call(DemoSeeder::class);
         }
     }
 }
