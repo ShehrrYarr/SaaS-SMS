@@ -19,12 +19,20 @@ use Illuminate\Validation\ValidationException;
  * The login field accepts an email, phone number or username. Lookups are
  * always restricted to the given school, so the same credentials at another
  * school never match.
+ *
+ * Failed attempts are limited per account (guessing one password) and per IP
+ * address across every account and school (one password tried on many
+ * accounts). A successful sign-in only clears the account's counter.
  */
 class LoginService
 {
     public const MAX_ATTEMPTS = 5;
 
     public const DECAY_SECONDS = 60;
+
+    public const MAX_ATTEMPTS_PER_IP = 30;
+
+    public const IP_DECAY_SECONDS = 900;
 
     /**
      * @throws ValidationException
@@ -34,7 +42,8 @@ class LoginService
         $login = trim($login);
         $throttleKey = $this->throttleKey($school, $login);
 
-        $this->ensureIsNotRateLimited($throttleKey);
+        $this->ensureIsNotRateLimited($throttleKey, self::MAX_ATTEMPTS);
+        $this->ensureIsNotRateLimited($this->ipThrottleKey(), self::MAX_ATTEMPTS_PER_IP);
 
         $credentials = [
             'school_id' => $school?->getKey(),
@@ -51,6 +60,7 @@ class LoginService
 
         if (! Auth::guard('web')->attempt($credentials, $remember)) {
             RateLimiter::hit($throttleKey, self::DECAY_SECONDS);
+            RateLimiter::hit($this->ipThrottleKey(), self::IP_DECAY_SECONDS);
 
             throw ValidationException::withMessages(['login' => __('auth.failed')]);
         }
@@ -98,9 +108,9 @@ class LoginService
     /**
      * @throws ValidationException
      */
-    private function ensureIsNotRateLimited(string $throttleKey): void
+    private function ensureIsNotRateLimited(string $throttleKey, int $maxAttempts): void
     {
-        if (! RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
+        if (! RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
             return;
         }
 
@@ -111,6 +121,11 @@ class LoginService
         throw ValidationException::withMessages([
             'login' => __('auth.throttle', ['seconds' => $seconds, 'minutes' => ceil($seconds / 60)]),
         ]);
+    }
+
+    private function ipThrottleKey(): string
+    {
+        return 'login-ip|'.request()->ip();
     }
 
     private function throttleKey(?School $school, string $login): string

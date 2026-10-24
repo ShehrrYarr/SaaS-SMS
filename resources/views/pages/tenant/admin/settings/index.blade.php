@@ -11,6 +11,7 @@ use App\Enums\LateFeeType;
 use App\Exceptions\DemoLocked;
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Support\Demo;
+use App\Support\Uploads;
 use App\Support\Locale\LocaleOptions;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -193,7 +194,7 @@ $save = function () {
         }
 
         $attributes['logo'] = $this->logo
-            ? $this->logo->storeAs("schools/{$school->id}", 'logo-'.Str::lower(Str::random(8)).'.'.strtolower($this->logo->getClientOriginalExtension()), 'public')
+            ? Uploads::store($this->logo, "schools/{$school->id}", 'logo-'.Str::lower(Str::random(8)), Uploads::IMAGES, 'public')
             : null;
     }
 

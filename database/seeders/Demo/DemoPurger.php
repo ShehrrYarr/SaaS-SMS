@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -55,5 +56,27 @@ final class DemoPurger
         });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->deleteFiles();
+    }
+
+    /**
+     * Uploads live under schools/{id}/ on the public and private disks. Removes
+     * the folders of every school that no longer exists: the one just purged,
+     * and any left behind by earlier rebuilds. Soft-deleted schools keep theirs.
+     */
+    public function deleteFiles(): void
+    {
+        $schools = DB::table('schools')->pluck('id')->map(fn ($id) => (string) $id)->all();
+
+        foreach (['public', 'local'] as $disk) {
+            foreach (Storage::disk($disk)->directories('schools') as $directory) {
+                $id = basename($directory);
+
+                if (ctype_digit($id) && ! in_array($id, $schools, true)) {
+                    Storage::disk($disk)->deleteDirectory($directory);
+                }
+            }
+        }
     }
 }

@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Support\Uploads;
 use Livewire\WithFileUploads;
 
 use function Livewire\Volt\{computed, mount, protect, rules, state, uses};
@@ -131,7 +132,7 @@ $save = function (StudentLeave $leave) {
     try {
         DB::transaction(function () use ($leave, $student, $data, &$path) {
             if ($this->attachment) {
-                $path = $this->attachment->storeAs('schools/'.tenant()->id.'/leave', Str::lower(Str::random(32)).'.'.strtolower($this->attachment->getClientOriginalExtension()), LeaveRequest::DISK);
+                $path = Uploads::store($this->attachment, 'schools/'.tenant()->id.'/leave', Str::lower(Str::random(32)), ['pdf', 'jpg', 'jpeg', 'png'], LeaveRequest::DISK);
             }
 
             $request = $leave->apply($student, LeaveType::query()->findOrFail($data['leave_type_id']), Carbon::parse($data['start_date']), Carbon::parse($data['end_date']), $data['reason'], auth()->user(), $path);

@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Support\Uploads;
 use Livewire\WithFileUploads;
 
 use function Livewire\Volt\{computed, layout, mount, protect, rules, state, title, updated, uses};
@@ -259,7 +260,7 @@ $storePhoto = protect(function (?string $current): ?string {
             Storage::disk('public')->delete($current);
         }
 
-        return $this->photo->storeAs('schools/'.tenant()->id.'/avatars', Str::lower(Str::random(24)).'.'.strtolower($this->photo->getClientOriginalExtension()), 'public');
+        return Uploads::store($this->photo, 'schools/'.tenant()->id.'/avatars', Str::lower(Str::random(24)), Uploads::IMAGES, 'public');
     }
 
     if ($this->remove_photo && $current) {

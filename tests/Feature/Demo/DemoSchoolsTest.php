@@ -31,6 +31,7 @@ use Database\Seeders\PlanSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(fn () => $this->seed(PlanSeeder::class));
 
@@ -131,7 +132,21 @@ it('deletes a demo school completely and leaves other schools alone', function (
         $teachers[$school->slug] = $teacher;
     }
 
+    // Uploads: the demo school's, another school's, and leftovers of a school
+    // deleted by an earlier rebuild.
+    Storage::fake('public');
+    Storage::fake('local');
+    Storage::disk('public')->put("schools/{$demo->id}/avatars/a.png", 'x');
+    Storage::disk('local')->put("schools/{$demo->id}/notices/1/n.pdf", 'x');
+    Storage::disk('public')->put("schools/{$other->id}/avatars/b.png", 'x');
+    Storage::disk('local')->put('schools/999999/leave/old.pdf', 'x');
+
     (new DemoPurger)->purge($demo);
+
+    expect(Storage::disk('public')->exists("schools/{$demo->id}"))->toBeFalse()
+        ->and(Storage::disk('local')->exists("schools/{$demo->id}"))->toBeFalse()
+        ->and(Storage::disk('local')->exists('schools/999999'))->toBeFalse()
+        ->and(Storage::disk('public')->exists("schools/{$other->id}/avatars/b.png"))->toBeTrue();
 
     expect(DB::table('schools')->where('id', $demo->id)->exists())->toBeFalse()
         ->and(DB::table('users')->where('school_id', $demo->id)->exists())->toBeFalse()

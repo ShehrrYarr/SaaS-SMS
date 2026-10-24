@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureCentralContext;
 use App\Http\Middleware\EnsurePortalAccess;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\EnsureTenantContext;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -29,6 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'portal' => EnsurePortalAccess::class,
             'account' => EnsureAccountIsUsable::class,
         ]);
+
+        $middleware->web(append: [SecurityHeaders::class]);
 
         // Resolve the tenant (or central context) before authentication and
         // route-model binding, so both always run inside the right school.

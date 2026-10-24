@@ -12,6 +12,7 @@ use App\Enums\NoticeAudience;
 use App\Enums\NoticeState;
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\Notice;
+use App\Support\Uploads;
 use App\Models\SchoolClass;
 use App\Services\Notices\NoticePublisher;
 use Illuminate\Support\Carbon;
@@ -128,8 +129,7 @@ $save = function (NoticePublisher $publisher) {
 
             if ($this->attachment) {
                 $name = Str::slug(pathinfo($this->attachment->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'attachment';
-                $extension = strtolower($this->attachment->getClientOriginalExtension());
-                $path = $this->attachment->storeAs("schools/{$notice->school_id}/notices/{$notice->id}", "{$name}.{$extension}", Notice::DISK);
+                $path = Uploads::store($this->attachment, "schools/{$notice->school_id}/notices/{$notice->id}", $name, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', ...Uploads::IMAGES], Notice::DISK);
             }
 
             $notice->update(['attachment' => $path]);

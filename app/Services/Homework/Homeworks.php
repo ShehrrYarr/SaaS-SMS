@@ -15,6 +15,7 @@ use App\Models\SubjectClass;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Support\SelfService;
+use App\Support\Uploads;
 use App\Tables\ActionFailed;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -341,8 +342,7 @@ class Homeworks
     private function store(UploadedFile $file, string $directory): string
     {
         $name = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'attachment';
-        $extension = strtolower($file->getClientOriginalExtension());
 
-        return $file->storeAs($directory, Str::limit($name, 80, '').'-'.Str::lower(Str::random(6)).'.'.$extension, Homework::DISK);
+        return Uploads::store($file, $directory, Str::limit($name, 80, '').'-'.Str::lower(Str::random(6)), ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', ...Uploads::IMAGES], Homework::DISK);
     }
 }
