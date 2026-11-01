@@ -57,8 +57,13 @@ class FeeCollection
                 throw new ActionFailed(__('This invoice is cancelled.'));
             }
 
-            // Charge any late fee due so far before taking the money.
-            $this->lateFees->apply($invoice);
+            if ($date->toDateString() < $invoice->issue_date->toDateString()) {
+                throw new ActionFailed(__('The payment date can\'t be before the invoice was issued (:date).', ['date' => $invoice->issue_date->format(tenant()->setting('date_format'))]));
+            }
+
+            // Charge the late fee due on the day the money came in: a payment
+            // recorded late but received on time owes none.
+            $this->lateFees->apply($invoice, $date);
 
             $cents = FeeCalculator::cents($amount);
             $balance = FeeCalculator::cents($invoice->total_amount) - FeeCalculator::cents($invoice->paid_amount);

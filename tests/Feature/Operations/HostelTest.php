@@ -31,9 +31,9 @@ beforeEach(function () {
     $class = SchoolClass::query()->create(['campus_id' => $campus->id, 'name' => 'Grade 9', 'numeric_level' => 9]);
 
     $records = app(StudentRecords::class);
-    $this->ali = $records->admit(['name' => 'Ali Raza', 'gender' => 'male', 'class_id' => $class->id], [['name' => 'Raza Ahmed', 'phone' => '0301', 'relation' => 'father']])->student;
-    $this->omar = $records->admit(['name' => 'Omar Farooq', 'gender' => 'male', 'class_id' => $class->id])->student;
-    $this->sara = $records->admit(['name' => 'Sara Malik', 'gender' => 'female', 'class_id' => $class->id])->student;
+    $this->ali = $records->admit(['name' => 'Ali Raza', 'gender' => 'male', 'class_id' => $class->id, 'admission_date' => '2026-08-01'], [['name' => 'Raza Ahmed', 'phone' => '0301', 'relation' => 'father']])->student;
+    $this->omar = $records->admit(['name' => 'Omar Farooq', 'gender' => 'male', 'class_id' => $class->id, 'admission_date' => '2026-08-01'])->student;
+    $this->sara = $records->admit(['name' => 'Sara Malik', 'gender' => 'female', 'class_id' => $class->id, 'admission_date' => '2026-08-01'])->student;
     $this->parent = $this->ali->parents()->with('user')->first()->user;
     $this->parent->forceFill(['must_change_password' => false])->save();
 

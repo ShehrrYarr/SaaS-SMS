@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Exceptions\DemoLocked;
+use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -98,6 +99,34 @@ class Demo
                 throw DemoLocked::settings();
             }
         });
+    }
+
+    /**
+     * Refuse a change to a one-click account's roles. Call before syncing.
+     *
+     * @param  list<int>  $roleIds  the roles the account would end up with
+     */
+    public static function guardRoleChange(User $user, array $roleIds): void
+    {
+        if (! static::locked() || ! static::isShowcased($user)) {
+            return;
+        }
+
+        $current = $user->roles()->pluck('roles.id')->map(fn ($id) => (int) $id)->all();
+
+        if (array_diff($current, $roleIds) || array_diff($roleIds, $current)) {
+            throw DemoLocked::roles();
+        }
+    }
+
+    /**
+     * Refuse a change to a built-in role's permissions or name.
+     */
+    public static function guardRole(Role $role): void
+    {
+        if (static::locked() && $role->is_system) {
+            throw DemoLocked::roles();
+        }
     }
 
     private static function isShowcased(User $user): bool

@@ -63,6 +63,18 @@ class SubscriptionManager
 
             $this->syncPaidUntil($school);
 
+            // Paying for another plan moves the school onto it.
+            if (! empty($data['plan_id']) && (int) $data['plan_id'] !== (int) $school->plan_id) {
+                $from = $school->plan_id;
+                $school->forceFill(['plan_id' => (int) $data['plan_id']])->save();
+
+                activity('billing')
+                    ->performedOn($school)
+                    ->causedBy($recorder)
+                    ->withProperties(['from_plan' => $from, 'to_plan' => (int) $data['plan_id']])
+                    ->log('Plan changed by payment');
+            }
+
             activity('billing')
                 ->performedOn($school)
                 ->causedBy($recorder)

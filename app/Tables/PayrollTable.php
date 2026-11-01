@@ -116,6 +116,7 @@ class PayrollTable extends Table
             Action::make('payslip', __('Salary slip'))
                 ->icon('ri-file-paper-2-line')
                 ->color('secondary')
+                ->visible(fn (PayrollRecord $record) => ! $record->isDraft())
                 ->url(fn (PayrollRecord $record) => route('tenant.payslips.show', $record->id), newTab: true),
 
             Action::make('discard', __('Discard draft'))

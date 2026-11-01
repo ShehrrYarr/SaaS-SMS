@@ -10,6 +10,7 @@
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\Role;
 use App\Services\Access\AccessGuard;
+use App\Support\Demo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +52,10 @@ rules(fn () => [
 $save = function (AccessGuard $guard) {
     $this->authorize($this->role ? 'roles.edit' : 'roles.create');
     $data = $this->validate();
+
+    if ($this->role) {
+        Demo::guardRole(Role::query()->forCurrentSchool()->findOrFail($this->role));
+    }
 
     $created = DB::transaction(function () use ($data, $guard) {
         if ($this->role) {

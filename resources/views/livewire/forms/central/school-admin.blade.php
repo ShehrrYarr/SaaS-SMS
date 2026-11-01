@@ -12,6 +12,7 @@ use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\School;
 use App\Models\User;
 use App\Support\Passwords;
+use App\Rules\PhoneNumber;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -39,7 +40,7 @@ rules(fn () => [
     'name' => ['required', 'string', 'max:100'],
     'username' => ['required', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->where('school_id', $this->school)],
     'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->where('school_id', $this->school)],
-    'phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')->where('school_id', $this->school)],
+    'phone' => ['nullable', 'string', 'max:30', new PhoneNumber, Rule::unique('users', 'phone')->where('school_id', $this->school)],
     'password' => ['required', 'string', Password::defaults()],
 ]);
 

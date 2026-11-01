@@ -90,6 +90,23 @@ it('keeps drafts and scheduled notices off the board until they go live', functi
     $this->get('/alpha/notices')->assertSee('Later one')->assertDontSee('Draft one');
 });
 
+it('announces a scheduled notice from the scheduler, which runs outside any school', function () {
+    Notification::fake();
+
+    $notice = Notice::query()->create(['title' => 'Sports day', 'body' => 'Friday.', 'target_audience' => NoticeAudience::Staff, 'published_at' => now()->subMinute()]);
+
+    tenancy()->forget();
+    $this->artisan('notices:announce')->assertSuccessful();
+
+    Notification::assertSentTo($this->teacher, SystemNotification::class, fn ($n) => $n->title === 'Sports day');
+    expect(tenancy()->runCentral(fn () => Notice::query()->find($notice->id))->notified_at)->not->toBeNull();
+
+    // Announced once: the next run has nothing to do.
+    Notification::fake();
+    $this->artisan('notices:announce')->assertSuccessful();
+    Notification::assertNothingSent();
+});
+
 it('rejects a schedule in the past and an expiry before publishing', function () {
     writeNotice(['title' => 'X', 'body' => 'Y', 'publish' => 'schedule', 'publish_at' => now()->subDay()->format('Y-m-d\TH:i')])->assertHasErrors('publish_at');
     writeNotice(['title' => 'X', 'body' => 'Y', 'expires_at' => now()->subHour()->format('Y-m-d\TH:i')])->assertHasErrors('expires_at');

@@ -7,6 +7,7 @@
  */
 
 use App\Enums\AttendanceStatus;
+use App\Enums\SchoolStatus;
 use App\Models\LibraryBook;
 use App\Models\Plan;
 use App\Models\School;
@@ -40,6 +41,16 @@ $go = function () {
 
     $this->redirect(route('tenant.login', ['school' => $school->slug]));
 };
+
+/*
+ * The plan most active schools are on, when one clearly leads.
+ */
+$popularPlan = protect(function (): ?int {
+    $top = School::query()->where('status', SchoolStatus::Active)->whereNotNull('plan_id')
+        ->selectRaw('plan_id, count(*) as total')->groupBy('plan_id')->orderByDesc('total')->limit(2)->toBase()->get();
+
+    return $top->isNotEmpty() && (int) $top->first()->total > (int) ($top->get(1)->total ?? 0) ? (int) $top->first()->plan_id : null;
+});
 
 /*
  * The demo school's name and a few live numbers, or null when there is no
@@ -84,6 +95,7 @@ with(fn () => [
     'demo' => Demo::enabled() ? $this->demoSchool() : null,
     'accounts' => Demo::accounts(),
     'plans' => Plan::query()->active()->ordered()->get(),
+    'popularPlan' => $this->popularPlan(),
     'features' => PlanFeatures::options(),
 ]);
 
@@ -388,11 +400,11 @@ with(fn () => [
                 <div class="row g-4 justify-content-center">
                     @foreach ($plans as $plan)
                         <div class="col-md-6 col-xl-4">
-                            <div @class(['card h-100 mb-0 landing-plan', 'is-featured' => $loop->index === 1 && $plans->count() > 2])>
+                            <div @class(['card h-100 mb-0 landing-plan', 'is-featured' => $plan->id === $popularPlan])>
                                 <div class="card-body p-4 d-flex flex-column">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <h4 class="mb-0">{{ $plan->name }}</h4>
-                                        @if ($loop->index === 1 && $plans->count() > 2)
+                                        @if ($plan->id === $popularPlan)
                                             <span class="badge bg-primary">{{ __('Most popular') }}</span>
                                         @endif
                                     </div>

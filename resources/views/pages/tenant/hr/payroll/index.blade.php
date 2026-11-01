@@ -9,6 +9,7 @@ use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\PayrollRecord;
 use App\Services\Payroll\Payroll;
 use App\Support\Billing\Money;
+use App\Tables\ActionFailed;
 use Illuminate\Support\Carbon;
 
 use function Livewire\Volt\{computed, layout, mount, on, state, title, updated, uses};
@@ -28,7 +29,18 @@ mount(function () {
     }
 });
 
-on(['refresh-tables' => fn () => null, 'payroll-changed' => fn () => null]);
+// The table's actions change the figures in the header.
+on([
+    'refresh-tables' => function () {
+        unset($this->summary);
+    },
+    'payroll-changed' => function () {
+        unset($this->summary);
+    },
+    'table-action-done' => function () {
+        unset($this->summary);
+    },
+]);
 
 updated(['month' => function () {
     if (! Payroll::isMonth($this->month)) {
@@ -57,8 +69,15 @@ $generate = function (Payroll $payroll) {
     $this->authorize('payroll.generate');
     abort_unless(Payroll::isMonth($this->month), 404);
 
-    $created = $payroll->generate($this->month, auth()->user());
+    try {
+        $created = $payroll->generate($this->month, auth()->user());
+    } catch (ActionFailed $e) {
+        $this->toast($e->getMessage(), 'error');
 
+        return;
+    }
+
+    unset($this->summary);
     $this->refreshTables();
     $this->toast($created > 0
         ? trans_choice(':count draft created.|:count drafts created.', $created, ['count' => $created])
@@ -78,8 +97,9 @@ $generate = function (Payroll $payroll) {
                 </button>
             @endif
             @can('payroll.generate')
-                <button type="button" class="btn btn-primary" wire:click="generate" wire:loading.attr="disabled" wire:target="generate" @disabled($summary['pending'] === 0)>
-                    <i class="ri-play-list-add-line me-1"></i>{{ $summary['pending'] > 0 ? __('Generate for :count staff', ['count' => $summary['pending']]) : __('All generated') }}
+                @php($future = Payroll::isMonth($month) && app(Payroll::class)->isFutureMonth($month))
+                <button type="button" class="btn btn-primary" wire:click="generate" wire:loading.attr="disabled" wire:target="generate" @disabled($future || $summary['pending'] === 0)>
+                    <i class="ri-play-list-add-line me-1"></i>{{ $future ? __('Month not started') : ($summary['pending'] > 0 ? __('Generate for :count staff', ['count' => $summary['pending']]) : __('All generated')) }}
                 </button>
             @endcan
         </x-slot:actions>

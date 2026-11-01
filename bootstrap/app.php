@@ -33,6 +33,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [SecurityHeaders::class]);
 
+        // "Enter as" on the landing page takes no password and changes nothing,
+        // and a page left open would otherwise expire when any tab signs in.
+        $middleware->validateCsrfTokens(except: ['demo/*']);
+
         // Resolve the tenant (or central context) before authentication and
         // route-model binding, so both always run inside the right school.
         $middleware->prependToPriorityList(AuthenticatesRequests::class, EnsureTenantContext::class);

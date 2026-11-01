@@ -34,9 +34,9 @@ beforeEach(function () {
     $this->class = SchoolClass::query()->create(['campus_id' => $campus->id, 'name' => 'Grade 6', 'numeric_level' => 6]);
 
     $records = app(StudentRecords::class);
-    $this->asma = $records->admit(['name' => 'Asma Khan', 'class_id' => $this->class->id], [['name' => 'Kamran Khan', 'phone' => '0301', 'relation' => 'father']])->student;
-    $this->bilal = $records->admit(['name' => 'Bilal Ahmed', 'class_id' => $this->class->id])->student;
-    $this->chand = $records->admit(['name' => 'Chand Ali', 'class_id' => $this->class->id])->student;
+    $this->asma = $records->admit(['name' => 'Asma Khan', 'class_id' => $this->class->id, 'admission_date' => '2026-08-01'], [['name' => 'Kamran Khan', 'phone' => '0301', 'relation' => 'father']])->student;
+    $this->bilal = $records->admit(['name' => 'Bilal Ahmed', 'class_id' => $this->class->id, 'admission_date' => '2026-08-01'])->student;
+    $this->chand = $records->admit(['name' => 'Chand Ali', 'class_id' => $this->class->id, 'admission_date' => '2026-08-01'])->student;
     $this->parent = $this->asma->parents()->with('user')->first()->user;
     $this->parent->forceFill(['must_change_password' => false])->save();
     $this->asma->user->forceFill(['must_change_password' => false])->save();

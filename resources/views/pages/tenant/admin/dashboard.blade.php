@@ -18,7 +18,7 @@ layout('layouts.app');
 title(__('Dashboard'));
 
 $stats = computed(fn () => [
-    'students' => StudentProfile::count(),
+    'students' => StudentProfile::query()->active()->count(),
     'staff' => StaffProfile::count(),
     'parents' => ParentProfile::count(),
     'classes' => SchoolClass::count(),

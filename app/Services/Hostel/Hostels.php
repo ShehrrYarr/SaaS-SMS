@@ -208,6 +208,10 @@ class Hostels
             throw new ActionFailed(__('Only a current student can be given a hostel room.'));
         }
 
+        if ($student->admission_date && $checkIn->toDateString() < $student->admission_date->toDateString()) {
+            throw new ActionFailed(__('That is before the student was admitted (:date).', ['date' => $student->admission_date->format(tenant()->setting('date_format'))]));
+        }
+
         return DB::transaction(function () use ($student, $room, $bed, $checkIn, $by) {
             $current = StudentHostel::query()->active()->with('room.building')->where('student_profile_id', $student->id)->lockForUpdate()->first();
 
@@ -236,8 +240,9 @@ class Hostels
 
     /**
      * Move a resident to another room (or bed) from a date. A move dated on
-     * or before check-in, or within the same room, edits the stay; a later
-     * move to another room ends it and starts a new one.
+     * check-in, or within the same room, edits the stay; a later move to
+     * another room ends it and starts a new one. The past stays on record: a
+     * move can't reach back before the stay began.
      *
      * @throws ActionFailed
      */
@@ -245,6 +250,10 @@ class Hostels
     {
         if (! $stay->isActive()) {
             throw new ActionFailed(__('This stay has ended. Allocate a room again instead.'));
+        }
+
+        if ($from->toDateString() < $stay->check_in->toDateString()) {
+            throw new ActionFailed(__('That is before they checked in (:date).', ['date' => $stay->check_in->format(tenant()->setting('date_format'))]));
         }
 
         return DB::transaction(function () use ($stay, $room, $bed, $from, $by) {

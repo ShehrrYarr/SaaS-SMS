@@ -175,6 +175,10 @@ class Transport
             throw new ActionFailed(__('Only a current student can be given transport.'));
         }
 
+        if ($student->admission_date && $from->toDateString() < $student->admission_date->toDateString()) {
+            throw new ActionFailed(__('That is before the student was admitted (:date).', ['date' => $student->admission_date->format(tenant()->setting('date_format'))]));
+        }
+
         return DB::transaction(function () use ($student, $route, $stop, $from, $by) {
             $current = StudentTransport::query()->active()->with('route')->where('student_profile_id', $student->id)->lockForUpdate()->first();
 
@@ -229,7 +233,12 @@ class Transport
 
             $this->ensureSeat($route);
 
-            if ($from->toDateString() <= $assignment->start_date->toDateString()) {
+            // The past stays on record: a change can't reach back before this assignment.
+            if ($from->toDateString() < $assignment->start_date->toDateString()) {
+                throw new ActionFailed(__('That is before the current assignment started (:date).', ['date' => $assignment->start_date->format(tenant()->setting('date_format'))]));
+            }
+
+            if ($from->toDateString() === $assignment->start_date->toDateString()) {
                 $assignment->update(['transport_route_id' => $route->id, 'pickup_point' => $stopName, 'start_date' => $from->toDateString()]);
                 $moved = $assignment;
             } else {

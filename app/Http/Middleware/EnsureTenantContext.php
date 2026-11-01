@@ -39,9 +39,27 @@ class EnsureTenantContext
 
         $this->tenancy->set($school);
 
-        // One session is one account. A session from another school (or the
-        // platform console) is signed out rather than carried across.
-        $user = Auth::guard('web')->user();
+        // One session is one account. A session from another school is signed
+        // out rather than carried across.
+        $guard = Auth::guard('web');
+        $user = $guard->user();
+
+        // The platform console's session is set aside instead: looking at a
+        // school as a guest shouldn't end it. Signing in here replaces it.
+        if ($user?->isSuperAdmin()) {
+            $session = $request->session();
+            $console = $session->pull($guard->getName());
+            $guard->forgetUser();
+            $request->cookies->remove($guard->getRecallerName());
+
+            $response = $next($request);
+
+            if (! $session->has($guard->getName())) {
+                $session->put($guard->getName(), $console);
+            }
+
+            return $response;
+        }
 
         if ($user !== null && (int) $user->school_id !== $school->getKey()) {
             Auth::guard('web')->logout();

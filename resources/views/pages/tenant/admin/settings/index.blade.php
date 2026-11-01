@@ -13,6 +13,7 @@ use App\Livewire\Concerns\InteractsWithUi;
 use App\Support\Demo;
 use App\Support\Uploads;
 use App\Support\Locale\LocaleOptions;
+use App\Rules\PhoneNumber;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -81,7 +82,7 @@ $ruleGroups = protect(fn () => [
     'general' => [
         'name' => ['required', 'string', 'max:150'],
         'email' => ['nullable', 'email', 'max:255'],
-        'phone' => ['nullable', 'string', 'max:30'],
+        'phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
         'address' => ['nullable', 'string', 'max:500'],
         'city' => ['nullable', 'string', 'max:100'],
         'country' => ['nullable', 'string', 'max:100'],
@@ -134,6 +135,7 @@ $save = function () {
             'employee_prefix.regex' => __('Use letters, numbers, slashes, dashes or underscores.'),
             'invoice_prefix.regex' => __('Use letters, numbers, slashes, dashes or underscores.'),
             'receipt_prefix.regex' => __('Use letters, numbers, slashes, dashes or underscores.'),
+            'weekly_off.max' => __('Leave at least one working day in the week.'),
         ]);
     } catch (ValidationException $e) {
         // Show the first tab that has a problem.

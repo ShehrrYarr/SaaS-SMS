@@ -33,8 +33,13 @@ class AnnounceScheduledNotices extends Command
             $school = $schools->get($notice->school_id);
 
             if ($school && $school->isActive()) {
-                // Dispatched inside the school, so the job carries its tenant.
-                tenancy()->run($school, fn () => SendNoticeNotifications::dispatch($notice->id));
+                // Dispatched inside the school, so the job carries its tenant. A
+                // block body on purpose: a pending dispatch queues when it is
+                // destroyed, which an arrow function would delay until the
+                // tenant is gone.
+                tenancy()->run($school, function () use ($notice) {
+                    SendNoticeNotifications::dispatch($notice->id);
+                });
             }
         }
 

@@ -85,6 +85,8 @@ function scrollActiveMenuIntoView() {
 
 function initPage() {
     applyTheme();
+    // Navigation restores the layout attribute the server rendered, which assumes a wide screen.
+    applySidebar();
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => window.bootstrap.Tooltip.getOrCreateInstance(el));
     document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => window.bootstrap.Popover.getOrCreateInstance(el));
@@ -117,6 +119,14 @@ export function boot() {
         if ((storage.get(KEYS.theme) || 'light') === 'auto') {
             applyTheme('auto');
         }
+    });
+
+    // Before the new page paints, so a phone never sees the sidebar slide open and shut.
+    document.addEventListener('livewire:navigating', (event) => {
+        event.detail?.onSwap?.(() => {
+            applyTheme();
+            applySidebar();
+        });
     });
 
     // Fires on the first load and after every wire:navigate.

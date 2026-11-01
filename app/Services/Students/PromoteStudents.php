@@ -57,6 +57,16 @@ class PromoteStudents
             throw new ActionFailed(__('Choose a different academic year to promote into.'));
         }
 
+        // A student's current class follows the promotion straight away, so the
+        // year they move into has to be under way.
+        if (! $to->isCurrent()) {
+            throw new ActionFailed(__('Make :year the current academic year before promoting students into it.', ['year' => $to->name]));
+        }
+
+        if ($to->start_date->toDateString() <= $from->start_date->toDateString()) {
+            throw new ActionFailed(__('Students can only move on to a later academic year.'));
+        }
+
         if ($toSection && $toClass && $toSection->class_id !== $toClass->id) {
             throw new ActionFailed(__('That section isn\'t part of the chosen class.'));
         }

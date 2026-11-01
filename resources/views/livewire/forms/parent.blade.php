@@ -14,6 +14,7 @@ use App\Models\StudentProfile;
 use App\Services\Students\Guardians;
 use App\Services\Students\ParentRecords;
 use App\Tables\ActionFailed;
+use App\Rules\PhoneNumber;
 use Illuminate\Validation\Rule;
 
 use function Livewire\Volt\{computed, mount, rules, state, uses};
@@ -106,7 +107,7 @@ $removeChild = function (int $index) {
 rules(fn () => [
     'name' => ['required', 'string', 'max:255'],
     'username' => [$this->parent ? 'required' : 'nullable', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->where('school_id', tenant()->id)->ignore($this->userId)],
-    'phone' => ['nullable', 'string', 'max:30', ...($this->parent ? [Rule::unique('users', 'phone')->where('school_id', tenant()->id)->ignore($this->userId)] : [])],
+    'phone' => ['nullable', 'string', 'max:30', new PhoneNumber, ...($this->parent ? [Rule::unique('users', 'phone')->where('school_id', tenant()->id)->ignore($this->userId)] : [])],
     'email' => ['nullable', 'email', 'max:255', ...($this->parent ? [Rule::unique('users', 'email')->where('school_id', tenant()->id)->ignore($this->userId)] : [])],
     'occupation' => ['nullable', 'string', 'max:100'],
     'address' => ['nullable', 'string', 'max:500'],

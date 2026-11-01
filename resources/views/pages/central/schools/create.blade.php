@@ -15,6 +15,7 @@ use App\Services\Schools\ProvisionSchool;
 use App\Support\Billing\Money;
 use App\Support\Locale\LocaleOptions;
 use App\Support\Passwords;
+use App\Rules\PhoneNumber;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -108,7 +109,7 @@ $rulesFor = protect(fn (int $step) => match ($step) {
         'name' => ['required', 'string', 'max:150'],
         'slug' => ['required', 'string', new SchoolSlug, Rule::unique('schools', 'slug')],
         'email' => ['nullable', 'email', 'max:255'],
-        'phone' => ['nullable', 'string', 'max:30'],
+        'phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
         'address' => ['nullable', 'string', 'max:500'],
         'city' => ['nullable', 'string', 'max:100'],
         'country' => ['nullable', 'string', 'max:100'],
@@ -117,7 +118,7 @@ $rulesFor = protect(fn (int $step) => match ($step) {
         'plan_id' => ['required', Rule::exists('plans', 'id')->whereNull('deleted_at')->where('is_active', true)],
         'billing' => ['required', Rule::in(['trial', 'paid', 'open'])],
         'trial_ends_at' => ['exclude_unless:billing,trial', 'required', 'date', 'after_or_equal:today'],
-        'amount' => ['exclude_unless:billing,paid', 'required', 'numeric', 'min:0', 'max:99999999'],
+        'amount' => ['exclude_unless:billing,paid', 'required', 'numeric', 'min:0.01', 'max:99999999'],
         'period_start' => ['exclude_unless:billing,paid', 'required', 'date'],
         'period_end' => ['exclude_unless:billing,paid', 'required', 'date', 'after_or_equal:period_start'],
         'paid_on' => ['exclude_unless:billing,paid', 'required', 'date', 'before_or_equal:today'],
@@ -132,7 +133,7 @@ $rulesFor = protect(fn (int $step) => match ($step) {
         'admin_name' => ['required', 'string', 'max:100'],
         'admin_username' => ['required', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/'],
         'admin_email' => ['nullable', 'email', 'max:255'],
-        'admin_phone' => ['nullable', 'string', 'max:30'],
+        'admin_phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
         'admin_password' => ['required', 'string', Password::defaults()],
     ],
     default => [],
@@ -486,7 +487,7 @@ $startOver = function () {
                                 <div class="col-md-6">
                                     <h6 class="text-uppercase text-muted fs-12 mb-3">{{ __('Also created') }}</h6>
                                     <ul class="list-unstyled mb-0 vstack gap-2">
-                                        <li><i class="ri-checkbox-circle-line text-success me-2"></i>{{ __('Built-in roles: School Admin, Teacher, HR, Accountant, Librarian, Student, Parent') }}</li>
+                                        <li><i class="ri-checkbox-circle-line text-success me-2"></i>{{ __('Built-in roles: :roles', ['roles' => implode(', ', array_keys(config('access.default_roles')))]) }}</li>
                                         <li><i class="ri-checkbox-circle-line text-success me-2"></i>{{ __('A Main Campus') }}</li>
                                     </ul>
                                 </div>

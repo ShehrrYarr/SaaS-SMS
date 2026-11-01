@@ -79,10 +79,24 @@ class Payroll
     }
 
     /**
+     * Payroll is for months that have started; a later month can't be run yet.
+     */
+    public function isFutureMonth(string $month): bool
+    {
+        return $month > tenant()->today()->format('Y-m');
+    }
+
+    /**
      * @return int drafts created
+     *
+     * @throws ActionFailed
      */
     public function generate(string $month, User $by): int
     {
+        if ($this->isFutureMonth($month)) {
+            throw new ActionFailed(__('Payroll for :month can\'t be generated until the month has started.', ['month' => self::monthLabel($month)]));
+        }
+
         $created = 0;
 
         foreach ($this->pendingStaff($month) as $staff) {
@@ -280,6 +294,10 @@ class Payroll
     {
         if ($record->status !== PayrollStatus::Approved) {
             throw new ActionFailed(__('Approve the payroll before paying it.'));
+        }
+
+        if ($paidOn->format('Y-m') < $record->month_year) {
+            throw new ActionFailed(__('A salary for :month can\'t be paid before that month.', ['month' => $record->monthLabel()]));
         }
 
         DB::transaction(function () use ($record, $paidOn, $method) {

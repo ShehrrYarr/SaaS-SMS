@@ -570,3 +570,19 @@ than editing the Herozi partials, so the theme can be updated cleanly.
     border-top: 1px solid var(--bs-border-color);
     background-color: var(--bs-body-bg);
 }
+
+// Dark mode: the theme's white labels are hard to read on these bright buttons,
+// and its active tab's blue on the dark card.
+[data-bs-theme="dark"] {
+    .btn-warning,
+    .btn-success {
+        --bs-btn-color: #10161d;
+        --bs-btn-hover-color: #10161d;
+        --bs-btn-active-color: #10161d;
+        --bs-btn-disabled-color: #10161d;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #8db4ff;
+    }
+}

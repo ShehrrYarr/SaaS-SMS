@@ -2,6 +2,7 @@
 
 namespace App\Services\Staff;
 
+use App\Enums\PayrollStatus;
 use App\Enums\UserType;
 use App\Models\Department;
 use App\Models\Section;
@@ -95,10 +96,19 @@ class StaffRecords
     /**
      * Remove a staff member and their account. They stop being class
      * teacher, head of department and subject teacher wherever they were.
+     * Someone salaries have been approved or paid for stays on the books, or
+     * those records would lose their name: mark them inactive instead.
+     *
+     * @throws ActionFailed
      */
     public function delete(StaffProfile $staff, ?User $by = null): void
     {
+        if ($staff->payrollRecords()->where('status', '!=', PayrollStatus::Draft)->exists()) {
+            throw new ActionFailed(__(':name has salary records, so they can\'t be deleted. Mark their account inactive instead.', ['name' => $staff->user?->name]));
+        }
+
         DB::transaction(function () use ($staff, $by) {
+            $staff->payrollRecords()->where('status', PayrollStatus::Draft)->forceDelete();
             Section::query()->where('class_teacher_id', $staff->id)->get()->each->update(['class_teacher_id' => null]);
             Department::query()->where('head_staff_profile_id', $staff->id)->get()->each->update(['head_staff_profile_id' => null]);
             SubjectClass::query()->where('teacher_id', $staff->id)->update(['teacher_id' => null]);

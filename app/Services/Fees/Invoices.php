@@ -193,11 +193,17 @@ class Invoices
             throw new ActionFailed(__('A cancelled invoice can\'t be changed.'));
         }
 
-        if ($dueDate->lt($invoice->issue_date)) {
+        if ($dueDate->toDateString() < $invoice->issue_date->toDateString()) {
             throw new ActionFailed(__('The due date can\'t be before the issue date.'));
         }
 
         $invoice->fill(['due_date' => $dueDate->toDateString(), 'notes' => filled($notes) ? trim($notes) : null]);
+
+        // The late fee follows the due date: extending it removes a fee no longer owed.
+        if ($invoice->isDirty('due_date') && $invoice->isOpen() && round((float) $invoice->subtotal - (float) $invoice->discount_amount - (float) $invoice->paid_amount, 2) > 0) {
+            $invoice->late_fee_amount = app(LateFees::class)->amountFor($invoice, tenant()->today());
+        }
+
         $this->refresh($invoice);
 
         if (! $invoice->isDirty()) {

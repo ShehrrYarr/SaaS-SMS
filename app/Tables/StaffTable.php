@@ -98,7 +98,8 @@ class StaffTable extends Table
 
             Action::make('edit', __('Edit'))
                 ->icon('ri-pencil-line')
-                ->can($manageable('staff.edit'))
+                ->can(fn (User $editor, StaffProfile $staff) => $editor->can('staff.edit')
+                    && $staff->user && app(AccessGuard::class)->canEditStaffRecord($editor, $staff->user))
                 ->url(fn (StaffProfile $staff) => Portal::route($this->portal(), 'staff.edit', $staff->id)),
 
             Action::make('reset-password', __('Reset password'))
@@ -111,7 +112,7 @@ class StaffTable extends Table
                 ->icon('ri-delete-bin-line')
                 ->color('danger')
                 ->can($manageable('staff.delete'))
-                ->confirm(__('Their account is removed and they stop being class teacher or subject teacher anywhere. Attendance and payroll records are kept.'), __('Delete this staff member?'))
+                ->confirm(__('Their account is removed and they stop being class teacher or subject teacher anywhere. Someone with approved or paid salaries can\'t be deleted: mark them inactive instead.'), __('Delete this staff member?'))
                 ->handle(fn (StaffProfile $staff) => app(StaffRecords::class)->delete($staff, auth()->user()))
                 ->success(__('Staff member deleted.')),
         ];

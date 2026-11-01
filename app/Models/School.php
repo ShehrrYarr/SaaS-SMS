@@ -244,11 +244,13 @@ class School extends Model
     }
 
     /**
-     * Today's date where the school is (attendance, notices, due dates).
+     * Today's date where the school is (attendance, notices, due dates), at
+     * midnight in the app's timezone: the same footing as date columns and
+     * Carbon::parse('Y-m-d'), so comparing them holds at any UTC offset.
      */
     public function today(): Carbon
     {
-        return Carbon::now($this->setting('timezone') ?: config('app.timezone'))->startOfDay();
+        return Carbon::parse(Carbon::now($this->setting('timezone') ?: config('app.timezone'))->toDateString());
     }
 
     /**

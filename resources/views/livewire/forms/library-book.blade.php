@@ -41,7 +41,17 @@ $categories = computed(fn () => LibraryBook::query()->whereNotNull('category')->
 rules(fn () => [
     'title' => ['required', 'string', 'max:255'],
     'author' => ['nullable', 'string', 'max:255'],
-    'isbn' => ['nullable', 'string', 'max:20', 'regex:/^[0-9Xx -]+$/'],
+    'isbn' => ['nullable', 'string', 'max:20', 'regex:/^[0-9Xx -]+$/', function ($attribute, $value, $fail) {
+        // One record per title: more copies go in its quantity. Dashes and spaces don't count.
+        $taken = LibraryBook::query()
+            ->whereRaw("replace(replace(isbn, '-', ''), ' ', '') = ?", [str_replace(['-', ' '], '', (string) $value)])
+            ->when($this->book, fn ($query) => $query->whereKeyNot($this->book))
+            ->value('title');
+
+        if ($taken) {
+            $fail(__('This ISBN is already used by ":title". Add copies to that book instead.', ['title' => $taken]));
+        }
+    }],
     'publisher' => ['nullable', 'string', 'max:255'],
     'category' => ['nullable', 'string', 'max:100'],
     'edition' => ['nullable', 'string', 'max:50'],

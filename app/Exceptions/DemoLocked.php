@@ -25,6 +25,11 @@ class DemoLocked extends HttpException
         return new self(__('This account is one of the demo sign-ins, so it can\'t be deactivated or deleted.'));
     }
 
+    public static function roles(): self
+    {
+        return new self(__('The demo sign-ins and built-in roles keep their access, so every visitor can use them. Try it on a custom role or another account.'));
+    }
+
     public static function settings(): self
     {
         return new self(__('The demo school\'s name, logo and settings can\'t be changed.'));

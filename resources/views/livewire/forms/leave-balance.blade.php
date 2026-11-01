@@ -28,9 +28,15 @@ $record = computed(fn () => LeaveBalance::query()->with(['staff.user', 'leaveTyp
 
 $save = function () {
     $this->authorize('leave.manage');
-    $this->validate(['allocated' => ['required', 'numeric', 'min:0', 'max:366', 'multiple_of:0.5']], attributes: ['allocated' => __('days allowed')]);
-
     $record = $this->record;
+    $used = (float) $record->used;
+
+    $this->validate(
+        ['allocated' => ['required', 'numeric', 'min:'.$used, 'max:366', 'multiple_of:0.5']],
+        ['allocated.min' => trans_choice('They have already taken :days day, so the allowance can\'t be lower than that.|They have already taken :days days, so the allowance can\'t be lower than that.', $used, ['days' => $used])],
+        ['allocated' => __('days allowed')],
+    );
+
     $old = (float) $record->allocated;
     $record->update(['allocated' => $this->allocated]);
 

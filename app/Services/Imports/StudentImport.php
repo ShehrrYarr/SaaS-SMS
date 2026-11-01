@@ -8,6 +8,7 @@ use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Rules\PhoneNumber;
 use App\Services\Billing\PlanLimits;
 use App\Services\People\Accounts;
 use App\Services\Students\Guardians;
@@ -99,6 +100,35 @@ class StudentImport extends RowImport
             $errors[] = __('Roll number is too long.');
         }
 
+        // The same checks as the admission form: a free seat and a unique roll number.
+        if ($class && ! $errors) {
+            $place = $class->id.'-'.($section?->id ?? 0);
+            $roll = mb_strtolower($v('roll_number'));
+
+            if ($roll !== '') {
+                if (isset($this->seen['roll'][$place][$roll])) {
+                    $errors[] = __('Roll number :roll appears more than once for this class in the file.', ['roll' => $v('roll_number')]);
+                } elseif (StudentProfile::query()->active()->where('class_id', $class->id)->where('section_id', $section?->id)->where('roll_number', $v('roll_number'))->exists()) {
+                    $errors[] = __('Another student in this class already has roll number :roll.', ['roll' => $v('roll_number')]);
+                }
+
+                $this->seen['roll'][$place][$roll] = true;
+            }
+
+            // Earlier rows that will be imported have taken their seats too.
+            $inClass = array_sum(array_filter($this->seen['placed'] ?? [], fn ($count, $key) => str_starts_with($key, $class->id.'-'), ARRAY_FILTER_USE_BOTH));
+            $problem = $this->students->placementProblem($class->id, $section?->id, alsoPlacing: $section ? ($this->seen['placed'][$place] ?? 0) : $inClass)
+                ?? ($section ? $this->students->placementProblem($class->id, null, alsoPlacing: $inClass) : null);
+
+            if ($problem) {
+                $errors[] = $problem;
+            }
+
+            if (! $errors) {
+                $this->seen['placed'][$place] = ($this->seen['placed'][$place] ?? 0) + 1;
+            }
+        }
+
         // Admission number
         $admissionNumber = $v('admission_number');
         if ($admissionNumber !== '') {
@@ -117,6 +147,8 @@ class StudentImport extends RowImport
         $admissionDate = $this->date($v('admission_date'));
         if ($admissionDate === false) {
             $errors[] = __('Admission date :value isn\'t a date (use YYYY-MM-DD).', ['value' => $v('admission_date')]);
+        } elseif ($admissionDate && ($admissionDate->toDateString() > tenant()->today()->toDateString() || $admissionDate->year <= 1950)) {
+            $errors[] = __('Admission date :value can\'t be in the future or that long ago.', ['value' => $v('admission_date')]);
         }
 
         $dob = $this->date($v('dob'));
@@ -145,6 +177,10 @@ class StudentImport extends RowImport
             $errors[] = __('Username may only use letters, numbers, dots, dashes and underscores (3 to 60).');
         }
 
+        if ($v('phone') !== '' && ! PhoneNumber::isValid($v('phone'))) {
+            $errors[] = __('Phone :value isn\'t a phone number.', ['value' => $v('phone')]);
+        }
+
         $this->checkIdentifier('username', __('Username'), $v('username'), $errors);
         $this->checkIdentifier('email', __('Email'), $v('email'), $errors);
         $this->checkIdentifier('phone', __('Phone'), $v('phone'), $errors);
@@ -166,6 +202,10 @@ class StudentImport extends RowImport
 
             if ($v('guardian_email') !== '' && ! filter_var($v('guardian_email'), FILTER_VALIDATE_EMAIL)) {
                 $errors[] = __('Guardian email :value isn\'t valid.', ['value' => $v('guardian_email')]);
+            }
+
+            if ($v('guardian_phone') !== '' && ! PhoneNumber::isValid($v('guardian_phone'))) {
+                $errors[] = __('Guardian phone :value isn\'t a phone number.', ['value' => $v('guardian_phone')]);
             }
 
             $existing = $this->guardians->accountMatching($v('guardian_phone'), $v('guardian_email'));

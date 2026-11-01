@@ -16,6 +16,7 @@ use App\Services\Imports\StudentImport;
 use App\Services\People\CredentialSheet;
 use App\Services\Students\PromoteStudents;
 use App\Services\Students\StudentRecords;
+use App\Tables\ActionFailed;
 use Illuminate\Http\UploadedFile;
 use Livewire\Volt\Volt;
 
@@ -158,6 +159,13 @@ it('promotes a class into the next year, with repeaters and leavers', function (
     $leave = $records->admit(['name' => 'Leave', 'class_id' => $this->one->id, 'section_id' => $this->oneA->id])->student;
 
     $enrollment = fn (StudentProfile $student) => $student->enrollments()->where('academic_year_id', $this->year->id)->value('id');
+
+    // Not until the new year is current: students' classes change straight away.
+    expect(fn () => app(PromoteStudents::class)->handle($this->year, $next, $this->two, null, [$enrollment($up) => PromoteStudents::PROMOTE]))
+        ->toThrow(ActionFailed::class, 'current academic year');
+    expect(StudentProfile::query()->find($up->id)->class_id)->toBe($this->one->id);
+
+    $next->makeCurrent();
 
     $counts = app(PromoteStudents::class)->handle($this->year, $next, $this->two, null, [
         $enrollment($up) => PromoteStudents::PROMOTE,

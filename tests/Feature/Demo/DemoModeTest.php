@@ -3,6 +3,7 @@
 use App\Enums\UserStatus;
 use App\Enums\UserType;
 use App\Exceptions\DemoLocked;
+use App\Models\Role;
 use App\Models\User;
 use App\Support\Demo;
 use Database\Seeders\PlanSeeder;
@@ -111,6 +112,43 @@ describe('locks', function () {
             expect($teacher->fresh()->name)->toBe('Sana M.')
                 ->and($added->fresh()->status)->toBe(UserStatus::Inactive);
         });
+    });
+
+    it('keeps the one-click accounts\' roles and the built-in roles\' permissions', function () {
+        tenancy()->set($this->demo);
+        $this->actingAs($this->admin);
+
+        $teacherRole = Role::query()->forCurrentSchool()->where('name', 'Teacher')->firstOrFail();
+        $before = $teacherRole->permissions()->count();
+
+        Volt::test('forms.user-access', ['user' => $this->teacher->id])
+            ->set('roles', [])
+            ->call('save')
+            ->assertDispatched('notify', type: 'warning');
+
+        expect($this->teacher->fresh()->hasRole('Teacher'))->toBeTrue();
+
+        Volt::test('tenant.admin.roles.permissions', ['role' => $teacherRole->id])
+            ->set('granted', [])
+            ->call('save')
+            ->assertDispatched('notify', type: 'warning');
+
+        expect($teacherRole->permissions()->count())->toBe($before);
+
+        // Custom roles stay open to try.
+        $custom = Role::create(['name' => 'Tester', 'guard_name' => 'web']);
+
+        Volt::test('tenant.admin.roles.permissions', ['role' => $custom->id])
+            ->set('granted', ['students.view'])
+            ->call('save')
+            ->assertDispatched('notify', type: 'success');
+
+        expect($custom->fresh()->permissions()->count())->toBe(1);
+    });
+
+    it('accepts "Enter as" from a page left open, with no session token', function () {
+        $this->post(route('demo.enter', 'teacher'))->assertRedirect();
+        $this->assertAuthenticatedAs($this->teacher);
     });
 
     it('keeps the school\'s name and settings', function () {

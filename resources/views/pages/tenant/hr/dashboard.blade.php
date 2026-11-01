@@ -13,7 +13,7 @@ title(__('Dashboard'));
 
 $stats = computed(fn () => [
     'staff' => StaffProfile::count(),
-    'presentToday' => StaffAttendance::query()->whereDate('date', today())
+    'presentToday' => StaffAttendance::query()->whereDate('date', tenant()->today())
         ->whereIn('status', [StaffAttendanceStatus::Present, StaffAttendanceStatus::Late, StaffAttendanceStatus::HalfDay])->count(),
     'pendingLeave' => LeaveRequest::query()->where('applicant_type', 'staff_profile')->where('status', LeaveStatus::Pending)->count(),
 ]);

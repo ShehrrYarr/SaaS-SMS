@@ -140,7 +140,7 @@ rules(fn () => [
     'building' => ['required', Rule::in(array_map('strval', array_keys($this->buildings)))],
     'hostel_room_id' => ['required', Rule::in(array_map('strval', array_keys($this->roomOptions)))],
     'bed_number' => ['nullable', 'string', 'max:10'],
-    'from' => ['required', 'date'],
+    'from' => ['required', 'date', 'before_or_equal:'.tenant()->today()->toDateString()],
 ])->attributes([
     'student_id' => __('student'),
     'hostel_room_id' => __('room'),
@@ -198,7 +198,7 @@ $save = function (Hostels $hostels) {
             <div class="col-sm-6">
                 <x-form.select name="bed_number" :label="__('Bed')" :options="$this->bedOptions" :placeholder="__('Any free bed')" />
             </div>
-            <div class="col-sm-6"><x-form.input name="from" type="date" :label="$current ? __('Move on') : __('Check-in date')" required /></div>
+            <div class="col-sm-6"><x-form.input name="from" type="date" :label="$current ? __('Move on') : __('Check-in date')" required :max="tenant()->today()->toDateString()" /></div>
         </div>
     @endif
 </x-modal.form>

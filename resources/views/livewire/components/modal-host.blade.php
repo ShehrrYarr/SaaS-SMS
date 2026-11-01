@@ -32,17 +32,30 @@ on([
     'close-modal' => fn () => $this->dispatch('modal-hide'),
 ]);
 
-$clear = function () {
-    $this->reset('component', 'params', 'size');
+// From the closing animation's end; ignored if another form has opened since.
+$clear = function (?int $opened = null) {
+    if ($opened === null || $opened === $this->opened) {
+        $this->reset('component', 'params', 'size');
+    }
 };
 
 ?>
 
 <div>
     <div class="modal fade" id="app-modal" tabindex="-1" aria-hidden="true" wire:ignore.self
-         x-data
-         x-init="$el.addEventListener('hidden.bs.modal', () => $wire.clear())"
-         x-on:modal-show.window="bootstrap.Modal.getOrCreateInstance($el).show()"
+         x-data="{ hiding: false, reopen: false }"
+         x-init="$el.addEventListener('hide.bs.modal', () => hiding = true);
+                 $el.addEventListener('hidden.bs.modal', () => {
+                     hiding = false;
+
+                     if (reopen) {
+                         reopen = false;
+                         bootstrap.Modal.getOrCreateInstance($el).show();
+                     } else {
+                         $wire.clear($wire.opened);
+                     }
+                 })"
+         x-on:modal-show.window="hiding ? reopen = true : bootstrap.Modal.getOrCreateInstance($el).show()"
          x-on:modal-hide.window="bootstrap.Modal.getOrCreateInstance($el).hide()">
         <div @class(['modal-dialog modal-dialog-centered modal-dialog-scrollable', 'modal-'.$size => $size !== 'md'])>
             <div class="modal-content">

@@ -56,6 +56,8 @@ $attendance = computed(function () {
 
 $leave = computed(fn () => $this->profile->leaveRequests()->with('leaveType')->latest('start_date')->limit(20)->get());
 
+$canEdit = computed(fn () => $this->profile->user && app(AccessGuard::class)->canEditStaffRecord(auth()->user(), $this->profile->user));
+
 $canManage = computed(fn () => $this->profile->user && app(AccessGuard::class)->canManage(auth()->user(), $this->profile->user));
 
 ?>
@@ -74,16 +76,18 @@ $canManage = computed(fn () => $this->profile->user && app(AccessGuard::class)->
 <div>
     <x-page-header :title="$user?->name ?? __('Staff member')"
                    :breadcrumbs="[Portal::label($portal) => route(Portal::dashboardRoute($portal)), __('Staff') => Portal::route($portal, 'staff.index'), ($user?->name ?? __('Staff member')) => null]">
-        @if ($this->canManage)
+        @if ($this->canEdit)
             <x-slot:actions>
                 @can('staff.edit')
                     <a href="{{ Portal::route($portal, 'staff.edit', $staff->id) }}" wire:navigate class="btn btn-primary"><i class="ri-pencil-line me-1"></i>{{ __('Edit') }}</a>
                 @endcan
-                @can('users.reset-password')
-                    <button type="button" class="btn btn-light" wire:click="$dispatch('open-modal', { component: 'forms.reset-user-password', params: { user: {{ $staff->user_id }} } })">
-                        <i class="ri-lock-password-line me-1"></i>{{ __('Reset password') }}
-                    </button>
-                @endcan
+                @if ($this->canManage)
+                    @can('users.reset-password')
+                        <button type="button" class="btn btn-light" wire:click="$dispatch('open-modal', { component: 'forms.reset-user-password', params: { user: {{ $staff->user_id }} } })">
+                            <i class="ri-lock-password-line me-1"></i>{{ __('Reset password') }}
+                        </button>
+                    @endcan
+                @endif
             </x-slot:actions>
         @endif
     </x-page-header>
@@ -134,7 +138,7 @@ $canManage = computed(fn () => $this->profile->user && app(AccessGuard::class)->
                             <dt>{{ __('Campus') }}</dt><dd>{{ $staff->campus?->name ?? '—' }}</dd>
                             <dt>{{ __('Qualification') }}</dt><dd>{{ $staff->qualification ?: '—' }}</dd>
                             @if ($canSeePay)
-                                <dt>{{ __('Monthly salary') }}</dt><dd>{{ $school->setting('currency_symbol') }}{{ number_format((float) $staff->salary, 2) }}</dd>
+                                <dt>{{ __('Monthly salary') }}</dt><dd>{{ App\Support\Billing\Money::school($staff->salary) }}</dd>
                                 <dt>{{ __('Bank') }}</dt>
                                 <dd>
                                     @if ($bank)

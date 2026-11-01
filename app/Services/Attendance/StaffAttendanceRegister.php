@@ -21,16 +21,18 @@ use Illuminate\Support\Facades\DB;
 class StaffAttendanceRegister
 {
     /**
-     * Staff with an active account, by name; optionally one department.
+     * Staff with an active account, by name; optionally one department, and
+     * only those who had joined by a date.
      *
      * @return Collection<int, StaffProfile>
      */
-    public function roster(?int $departmentId = null): Collection
+    public function roster(?int $departmentId = null, ?CarbonInterface $on = null): Collection
     {
         return StaffProfile::query()
             ->with(['user', 'department'])
             ->whereHas('user', fn ($query) => $query->where('status', UserStatus::Active))
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
+            ->when($on, fn ($query) => $query->where(fn ($query) => $query->whereNull('joining_date')->orWhereDate('joining_date', '<=', $on)))
             ->get()
             ->sortBy(fn (StaffProfile $staff) => mb_strtolower((string) $staff->user?->name))
             ->values();
@@ -96,7 +98,7 @@ class StaffAttendanceRegister
         }
 
         return DB::transaction(function () use ($date, $entries, $by, $departmentId) {
-            $staff = $this->roster($departmentId);
+            $staff = $this->roster($departmentId, $date);
             $saved = StaffAttendance::query()->whereIn('staff_profile_id', $staff->modelKeys())->whereDate('date', $date)->get()->keyBy('staff_profile_id');
             $leave = $this->approvedLeave($staff->modelKeys(), $date);
             $counts = array_fill_keys(StaffAttendanceStatus::values(), 0);
@@ -111,6 +113,12 @@ class StaffAttendanceRegister
 
                 $present = in_array($status, [StaffAttendanceStatus::Present, StaffAttendanceStatus::Late, StaffAttendanceStatus::HalfDay], true);
                 $remarks = trim((string) ($entry['remarks'] ?? ''));
+                $checkIn = $present ? $this->time($entry['check_in'] ?? null) : null;
+                $checkOut = $present ? $this->time($entry['check_out'] ?? null) : null;
+
+                if ($checkIn && $checkOut && $checkOut < $checkIn) {
+                    throw new ActionFailed(__(':name\'s check-out can\'t be before their check-in.', ['name' => $member->user?->name]));
+                }
 
                 $record = $saved->get($member->id) ?? new StaffAttendance([
                     'staff_profile_id' => $member->id,
@@ -119,8 +127,8 @@ class StaffAttendanceRegister
 
                 $record->fill([
                     'status' => $status,
-                    'check_in' => $present ? $this->time($entry['check_in'] ?? null) : null,
-                    'check_out' => $present ? $this->time($entry['check_out'] ?? null) : null,
+                    'check_in' => $checkIn,
+                    'check_out' => $checkOut,
                     'remarks' => $remarks === '' ? null : mb_substr($remarks, 0, 255),
                     'leave_request_id' => $status === StaffAttendanceStatus::OnLeave ? $leave->get($member->id)?->id : null,
                 ]);

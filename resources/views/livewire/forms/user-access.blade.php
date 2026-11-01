@@ -13,6 +13,7 @@ use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Access\AccessGuard;
+use App\Support\Demo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -63,6 +64,8 @@ $save = function () {
     $wanted = array_intersect(array_map('intval', $data['roles']), $schoolRoles, $this->assignable);
     $untouchable = array_diff($before, $this->assignable);
     $final = array_values(array_unique([...$wanted, ...$untouchable]));
+
+    Demo::guardRoleChange($account, $final);
 
     DB::transaction(function () use ($account, $final, $before, $data) {
         $account->syncRoles($final);

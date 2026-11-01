@@ -6,6 +6,7 @@ use App\Enums\UserType;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Rules\PhoneNumber;
 use App\Services\Billing\PlanLimits;
 use App\Services\People\Accounts;
 use App\Services\Staff\StaffRecords;
@@ -103,6 +104,12 @@ class StaffImport extends RowImport
         $joining = $this->date($v('joining_date'));
         if ($joining === false) {
             $errors[] = __('Joining date :value isn\'t a date (use YYYY-MM-DD).', ['value' => $v('joining_date')]);
+        } elseif ($joining && ($joining->toDateString() > tenant()->today()->addYear()->toDateString() || $joining->year <= 1950)) {
+            $errors[] = __('Joining date :value is too far from today.', ['value' => $v('joining_date')]);
+        }
+
+        if ($v('phone') !== '' && ! PhoneNumber::isValid($v('phone'))) {
+            $errors[] = __('Phone :value isn\'t a phone number.', ['value' => $v('phone')]);
         }
 
         $dob = $this->date($v('dob'));

@@ -35,9 +35,9 @@ mount(function (int $student) {
 
 rules(fn () => [
     'status' => ['required', Rule::enum(StudentStatus::class)],
-    'on' => ['nullable', 'date'],
+    'on' => ['nullable', 'date', 'after_or_equal:'.(StudentProfile::query()->find($this->student)?->admission_date?->toDateString() ?? '1950-01-01'), 'before_or_equal:'.tenant()->today()->toDateString()],
     'remarks' => ['nullable', 'string', 'max:255'],
-]);
+])->attributes(['on' => __('effective date')])->messages(['on.after_or_equal' => __('The effective date can\'t be before they were admitted.')]);
 
 $save = function (StudentRecords $records) {
     $this->authorize('students.edit');
@@ -70,7 +70,7 @@ $save = function (StudentRecords $records) {
     <x-form.select name="status" :label="__('Status')" :options="StudentStatus::options()" :placeholder="false" required live />
 
     @if ($leaving)
-        <x-form.input name="on" type="date" :label="__('Effective date')" />
+        <x-form.input name="on" type="date" :label="__('Effective date')" :max="tenant()->today()->toDateString()" />
     @endif
 
     <x-form.input name="remarks" :label="__('Remarks')" maxlength="255" :placeholder="__('e.g. Moved to another city')" wrapper="mb-3" />

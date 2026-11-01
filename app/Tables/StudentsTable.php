@@ -110,7 +110,7 @@ class StudentsTable extends Table
                 ->icon('ri-delete-bin-line')
                 ->color('danger')
                 ->can('students.delete')
-                ->confirm(__('The student and their sign-in account are removed. Attendance, marks and fee records are kept.'), __('Delete this student?'))
+                ->confirm(__('The student and their sign-in account are removed. Students with fee or exam records can\'t be deleted: change their status to Left instead.'), __('Delete this student?'))
                 ->handle(fn (StudentProfile $student) => app(StudentRecords::class)->delete($student, auth()->user()))
                 ->success(__('Student deleted.')),
         ];
@@ -123,7 +123,7 @@ class StudentsTable extends Table
                 ->icon('ri-delete-bin-line')
                 ->color('danger')
                 ->can('students.delete')
-                ->confirm(__('Delete the selected students and their sign-in accounts? Their records are kept.'))
+                ->confirm(__('Delete the selected students and their sign-in accounts? This stops at the first student with fee or exam records.'))
                 ->handle(function (Collection $students): int {
                     $students->each(fn (StudentProfile $student) => app(StudentRecords::class)->delete($student, auth()->user()));
 

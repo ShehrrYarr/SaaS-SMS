@@ -22,9 +22,20 @@ use Illuminate\Support\Collection;
  * the student and parent portals is left out of the comparison: those
  * portals only show a person their own records, so they give no power over
  * anyone else (and "*" deliberately doesn't include them).
+ *
+ * HR is the exception that keeps staff records workable: with staff.edit it
+ * can keep the record of anyone but itself and the school's administrators,
+ * and hand out the built-in job roles when placing staff. It still can't
+ * reset their passwords, which is what would let it act as them.
  */
 class AccessGuard
 {
+    /** Built-in roles someone keeping staff records may give, whatever they hold. */
+    private const JOB_ROLES = ['Teacher', 'Accountant', 'Librarian', 'Transport Manager', 'Hostel Warden'];
+
+    /** Holding any of these makes an account an administrator, off limits to staff.edit alone. */
+    private const ADMINISTRATOR_PERMISSIONS = ['roles.edit', 'users.edit', 'users.reset-password', 'settings.edit'];
+
     /** @var array<int, Collection<int, string>> */
     private array $held = [];
 
@@ -61,6 +72,36 @@ class AccessGuard
             ->diff($this->permissionsOf($editor))
             ->diff(PermissionCatalog::selfServicePortalPermissions())
             ->isEmpty();
+    }
+
+    /**
+     * Whether the editor may keep this account's staff record: details,
+     * employment, status and job roles (not its password).
+     */
+    public function canEditStaffRecord(User $editor, User $account): bool
+    {
+        if ($this->canManage($editor, $account)) {
+            return true;
+        }
+
+        return ! $editor->is($account)
+            && ! $account->isSuperAdmin()
+            && $this->permissionsOf($editor)->contains('staff.edit')
+            && $this->permissionsOf($account)->intersect(self::ADMINISTRATOR_PERMISSIONS)->isEmpty();
+    }
+
+    /**
+     * Whether the editor may give or take this role on the staff form.
+     */
+    public function canAssignOnStaffRecord(User $editor, Role $role): bool
+    {
+        if ($this->canAssign($editor, $role)) {
+            return true;
+        }
+
+        return $role->is_system
+            && in_array($role->name, self::JOB_ROLES, true)
+            && $this->permissionsOf($editor)->intersect(['staff.create', 'staff.edit'])->isNotEmpty();
     }
 
     public function forget(?User $user = null): void

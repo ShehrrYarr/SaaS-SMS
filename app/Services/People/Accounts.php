@@ -53,6 +53,11 @@ class Accounts
         $base = Str::of(Str::ascii($name))->lower()->replaceMatches('/[^a-z0-9]+/', '.')->trim('.')->limit(40, '')->toString();
         $base = $base !== '' ? $base : $fallback;
 
+        // Usernames are at least three characters, so a short name stays editable.
+        if (strlen($base) < 3) {
+            $base .= '.'.$fallback;
+        }
+
         $taken = User::query()->withTrashed()
             ->where(fn ($query) => $query->where('username', $base)->orWhere('username', 'like', addcslashes($base, '%_\\').'%'))
             ->pluck('username')

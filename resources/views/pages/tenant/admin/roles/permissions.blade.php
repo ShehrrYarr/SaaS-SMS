@@ -13,6 +13,7 @@ use App\Models\Role;
 use App\Services\Access\AccessGuard;
 use App\Support\Access\PermissionCatalog;
 use App\Support\Billing\PlanFeatures;
+use App\Support\Demo;
 use App\Support\Portal;
 
 use function Livewire\Volt\{computed, layout, mount, state, title, uses};
@@ -91,6 +92,8 @@ $save = function () {
     abort_if($this->locked, 403);
 
     $role = $this->roleModel;
+    Demo::guardRole($role);
+
     $editable = $this->editable;
     $known = PermissionCatalog::schoolPermissions();
     $before = $role->permissions->pluck('name')->all();

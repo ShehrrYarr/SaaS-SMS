@@ -41,7 +41,17 @@ updated(['class_id' => function () {
 }]);
 
 rules(fn () => [
-    'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', tenant()->id)->whereNull('deleted_at')],
+    'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', tenant()->id)->whereNull('deleted_at'), function ($attribute, $value, $fail) {
+        $current = StudentProfile::query()->find($this->student);
+
+        if ((int) $current?->class_id === (int) $value && (int) $current?->section_id === (int) $this->section_id) {
+            return;
+        }
+
+        if ($problem = app(StudentRecords::class)->placementProblem((int) $value, $this->section_id ? (int) $this->section_id : null, $this->student)) {
+            $fail($problem);
+        }
+    }],
     'section_id' => [$this->sections->isNotEmpty() ? 'required' : 'nullable', Rule::exists('sections', 'id')->where('class_id', (int) $this->class_id)->whereNull('deleted_at')],
     'roll_number' => ['nullable', 'string', 'max:20'],
 ])->attributes(['class_id' => __('class'), 'section_id' => __('section')]);

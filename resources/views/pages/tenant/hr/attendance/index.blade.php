@@ -26,7 +26,7 @@ state(['entries' => []]);
 
 $day = protect(fn (): ?Carbon => preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->date) ? Carbon::parse($this->date) : null);
 
-$staff = computed(fn () => app(StaffAttendanceRegister::class)->roster($this->department ? (int) $this->department : null));
+$staff = computed(fn () => app(StaffAttendanceRegister::class)->roster($this->department ? (int) $this->department : null, $this->day()));
 
 $flags = computed(fn () => $this->day()
     ? collect(app(StaffAttendanceRegister::class)->entries($this->staff, $this->day()))->map(fn ($entry) => ['saved' => $entry['saved'], 'on_leave' => $entry['on_leave']])->all()
@@ -89,7 +89,7 @@ $save = function (StaffAttendanceRegister $register) {
     }
 
     unset($this->flags);
-    $this->toast(__('Staff register saved: :present present, :absent absent.', ['present' => $counts['present'] + $counts['late'] + $counts['half_day'], 'absent' => $counts['absent']]));
+    $this->toast(__('Staff register saved: :present present, :late late, :half half day, :absent absent.', ['present' => $counts['present'], 'late' => $counts['late'], 'half' => $counts['half_day'], 'absent' => $counts['absent']]));
 };
 
 ?>

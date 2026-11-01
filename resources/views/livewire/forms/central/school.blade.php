@@ -8,6 +8,7 @@
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\School;
 use App\Rules\SchoolSlug;
+use App\Rules\PhoneNumber;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -33,7 +34,7 @@ rules(fn () => [
     'name' => ['required', 'string', 'max:150'],
     'slug' => ['required', 'string', new SchoolSlug, Rule::unique('schools', 'slug')->ignore($this->school)],
     'email' => ['nullable', 'email', 'max:255'],
-    'phone' => ['nullable', 'string', 'max:30'],
+    'phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
     'address' => ['nullable', 'string', 'max:500'],
     'city' => ['nullable', 'string', 'max:100'],
     'country' => ['nullable', 'string', 'max:100'],

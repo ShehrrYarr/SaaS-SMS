@@ -11,6 +11,7 @@ use App\Enums\PaymentMethod;
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\Plan;
 use App\Models\School;
+use App\Models\SubscriptionPayment;
 use App\Services\Billing\SubscriptionManager;
 use App\Support\Billing\Money;
 use Illuminate\Support\Carbon;
@@ -85,8 +86,23 @@ updated([
 rules(fn () => [
     'school_id' => ['required', Rule::exists('schools', 'id')->whereNull('deleted_at')],
     'plan_id' => ['nullable', Rule::exists('plans', 'id')],
-    'amount' => ['required', 'numeric', 'min:0', 'max:99999999'],
-    'period_start' => ['required', 'date'],
+    'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+    'period_start' => ['required', 'date', function ($attribute, $value, $fail) {
+        // The same months can't be billed twice.
+        if (! $this->school_id || ! strtotime((string) $this->period_end)) {
+            return;
+        }
+
+        $overlap = tenancy()->runCentral(fn () => SubscriptionPayment::query()
+            ->where('school_id', (int) $this->school_id)
+            ->whereDate('period_start', '<=', $this->period_end)
+            ->whereDate('period_end', '>=', $value)
+            ->first());
+
+        if ($overlap) {
+            $fail(__('This school already has a payment covering :from to :to.', ['from' => $overlap->period_start->format('d M Y'), 'to' => $overlap->period_end->format('d M Y')]));
+        }
+    }],
     'period_end' => ['required', 'date', 'after_or_equal:period_start'],
     'paid_on' => ['required', 'date', 'before_or_equal:today'],
     'payment_method' => ['required', Rule::enum(PaymentMethod::class)],

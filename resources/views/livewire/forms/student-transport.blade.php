@@ -99,7 +99,7 @@ rules(fn () => [
     'student_id' => ['required'],
     'transport_route_id' => ['required', Rule::in(array_map('strval', array_keys($this->routeOptions)))],
     'stop' => [$this->stopOptions === [] ? 'nullable' : 'required', 'string', 'max:100', ...($this->stopOptions === [] ? [] : [Rule::in(array_map('strval', array_keys($this->stopOptions)))])],
-    'from' => ['required', 'date'],
+    'from' => ['required', 'date', 'before_or_equal:'.tenant()->today()->toDateString()],
 ])->attributes([
     'student_id' => __('student'),
     'transport_route_id' => __('route'),
@@ -153,5 +153,5 @@ $save = function (Transport $transport) {
         <x-form.input name="stop" :label="__('Pickup point')" maxlength="100" :hint="__('This route has no stops listed.')" />
     @endif
 
-    <x-form.input name="from" type="date" :label="$current ? __('Change from') : __('Starts on')" required wrapper="mb-0" />
+    <x-form.input name="from" type="date" :label="$current ? __('Change from') : __('Starts on')" required wrapper="mb-0" :max="tenant()->today()->toDateString()" />
 </x-modal.form>

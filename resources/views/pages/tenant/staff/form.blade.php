@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\Access\AccessGuard;
 use App\Services\Billing\PlanLimits;
 use App\Services\Staff\StaffRecords;
+use App\Support\Demo;
 use App\Support\Portal;
 use App\Tables\ActionFailed;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use App\Support\Uploads;
+use App\Rules\PhoneNumber;
 use Livewire\WithFileUploads;
 
 use function Livewire\Volt\{computed, layout, mount, protect, rules, state, title, updated, uses};
@@ -69,7 +71,7 @@ mount(function (?int $staff = null) {
     $this->authorize('staff.edit');
 
     $record = StaffProfile::query()->with('user.roles')->findOrFail($staff);
-    abort_unless($record->user && app(AccessGuard::class)->canManage(auth()->user(), $record->user), 403);
+    abort_unless($record->user && app(AccessGuard::class)->canEditStaffRecord(auth()->user(), $record->user), 403);
 
     $bank = $record->bank_details ?? [];
     $emergency = $record->emergency_contact ?? [];
@@ -110,7 +112,7 @@ $allRoles = computed(fn () => Role::query()->forCurrentSchool()->with('permissio
     ->values());
 
 $assignable = computed(fn () => $this->allRoles
-    ->filter(fn (Role $role) => app(AccessGuard::class)->canAssign(auth()->user(), $role))
+    ->filter(fn (Role $role) => app(AccessGuard::class)->canAssignOnStaffRecord(auth()->user(), $role))
     ->pluck('id')
     ->all());
 
@@ -146,7 +148,7 @@ rules(function () {
         'name' => ['required', 'string', 'max:255'],
         'username' => [$this->staff ? 'required' : 'nullable', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->where('school_id', $school)->ignore($this->userId)],
         'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->where('school_id', $school)->ignore($this->userId)],
-        'phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')->where('school_id', $school)->ignore($this->userId)],
+        'phone' => ['nullable', 'string', 'max:30', new PhoneNumber, Rule::unique('users', 'phone')->where('school_id', $school)->ignore($this->userId)],
         'user_type' => ['required', Rule::in(array_keys($this->types()))],
         'roles' => ['array'],
         'roles.*' => ['integer'],
@@ -158,15 +160,16 @@ rules(function () {
         'designation' => ['nullable', 'string', 'max:100'],
         'department_id' => ['nullable', Rule::exists('departments', 'id')->where('school_id', $school)->whereNull('deleted_at')],
         'campus_id' => ['nullable', Rule::exists('campuses', 'id')->where('school_id', $school)->whereNull('deleted_at')],
-        'joining_date' => ['nullable', 'date'],
+        // Someone can be added ahead of their start date, but not years ahead.
+        'joining_date' => ['nullable', 'date', 'after:1950-01-01', 'before_or_equal:'.tenant()->today()->addYear()->toDateString()],
         'qualification' => ['nullable', 'string', 'max:255'],
         'salary' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
 
         'gender' => ['nullable', Rule::enum(Gender::class)],
-        'dob' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
+        'dob' => ['nullable', 'date', 'before:'.tenant()->today()->toDateString(), 'after:1900-01-01'],
         'address' => ['nullable', 'string', 'max:500'],
         'emergency_name' => ['nullable', 'string', 'max:255'],
-        'emergency_phone' => ['nullable', 'string', 'max:30'],
+        'emergency_phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
         'emergency_relation' => ['nullable', 'string', 'max:50'],
 
         'bank_name' => ['nullable', 'string', 'max:100'],
@@ -179,6 +182,7 @@ rules(function () {
     'department_id' => __('department'),
     'campus_id' => __('campus'),
     'dob' => __('date of birth'),
+    'joining_date' => __('joining date'),
 ])->messages(['username.regex' => __('Use letters, numbers, dots, dashes or underscores.')]);
 
 $storePhoto = protect(function (?string $current): ?string {
@@ -227,14 +231,16 @@ $save = function (StaffRecords $records) {
             }
 
             $staff = StaffProfile::query()->with('user.roles')->findOrFail($this->staff);
-            abort_unless(app(AccessGuard::class)->canManage(auth()->user(), $staff->user), 403);
+            abort_unless(app(AccessGuard::class)->canEditStaffRecord(auth()->user(), $staff->user), 403);
 
             $fields['avatar'] = $this->storePhoto($staff->user->avatar);
             $records->update($staff, $fields, $type);
 
             // Roles the editor can't hold stay as they are.
             $untouchable = array_diff($staff->user->roles->pluck('id')->all(), $this->assignable);
-            $staff->user->syncRoles(array_values(array_unique([...$wanted, ...$untouchable])));
+            $final = array_values(array_unique([...$wanted, ...$untouchable]));
+            Demo::guardRoleChange($staff->user, $final);
+            $staff->user->syncRoles($final);
             $staff->user->update(['status' => $data['status']]);
 
             $this->savedId = $staff->id;
@@ -336,7 +342,7 @@ $addAnother = function () {
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-sm-6"><x-form.select name="gender" :label="__('Gender')" :options="Gender::options()" /></div>
-                                    <div class="col-sm-6"><x-form.input name="dob" type="date" :label="__('Date of birth')" max="{{ now()->toDateString() }}" /></div>
+                                    <div class="col-sm-6"><x-form.input name="dob" type="date" :label="__('Date of birth')" :max="tenant()->today()->toDateString()" /></div>
                                 </div>
                                 <x-form.textarea name="address" :label="__('Address')" rows="2" maxlength="500" />
                                 <h6 class="mb-3">{{ __('Emergency contact') }}</h6>

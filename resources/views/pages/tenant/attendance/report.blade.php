@@ -117,7 +117,7 @@ $export = function () {
 
 <div>
     <x-page-header :title="__('Attendance report')"
-                   :breadcrumbs="[Portal::label($portal) => route(Portal::dashboardRoute($portal)), __('Attendance') => Route::has($portal.'.attendance.index') ? route($portal.'.attendance.index') : null, __('Monthly report') => null]">
+                   :breadcrumbs="[Portal::label($portal) => route(Portal::dashboardRoute($portal)), __('Attendance') => Route::has($portal.'.attendance.index') && auth()->user()->can($portal === 'admin' ? 'attendance.manage' : 'attendance.mark') ? route($portal.'.attendance.index') : null, __('Monthly report') => null]">
         @if ($sheet)
             <x-slot:actions>
                 <button type="button" class="btn btn-light" wire:click="export"><i class="ri-download-2-line me-1"></i>{{ __('Export CSV') }}</button>

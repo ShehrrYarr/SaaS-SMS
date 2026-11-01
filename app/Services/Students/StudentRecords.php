@@ -3,11 +3,16 @@
 namespace App\Services\Students;
 
 use App\Enums\EnrollmentStatus;
+use App\Enums\InvoiceStatus;
 use App\Enums\StudentStatus;
 use App\Enums\UserStatus;
 use App\Enums\UserType;
 use App\Models\AcademicYear;
+use App\Models\Invoice;
+use App\Models\Mark;
 use App\Models\ParentProfile;
+use App\Models\SchoolClass;
+use App\Models\Section;
 use App\Models\StudentEnrollment;
 use App\Models\StudentHostel;
 use App\Models\StudentProfile;
@@ -156,6 +161,32 @@ class StudentRecords
     }
 
     /**
+     * Why a student can't be placed in this class or section, when its
+     * capacity (if it has one) is already taken by current students.
+     */
+    public function placementProblem(int $classId, ?int $sectionId, ?int $ignoreStudentId = null, int $alsoPlacing = 0): ?string
+    {
+        $placed = fn () => StudentProfile::query()
+            ->where('class_id', $classId)
+            ->where('status', StudentStatus::Active)
+            ->when($ignoreStudentId, fn ($query) => $query->whereKeyNot($ignoreStudentId));
+
+        $section = $sectionId ? Section::query()->find($sectionId) : null;
+
+        if ($section?->capacity && $placed()->where('section_id', $sectionId)->count() + $alsoPlacing >= $section->capacity) {
+            return __('Section :section is full: it has :count of :capacity seats taken. Raise its capacity or choose another section.', ['section' => $section->name, 'count' => $section->capacity, 'capacity' => $section->capacity]);
+        }
+
+        $class = SchoolClass::query()->find($classId);
+
+        if ($class?->capacity && $placed()->count() + $alsoPlacing >= $class->capacity) {
+            return __(':class is full: it has :count of :capacity seats taken. Raise its capacity or choose another class.', ['class' => $class->name, 'count' => $class->capacity, 'capacity' => $class->capacity]);
+        }
+
+        return null;
+    }
+
+    /**
      * Mark a student as left, transferred, graduated or suspended, or take
      * them back. Students who aren't active can't sign in, and don't count
      * towards the plan's student limit.
@@ -204,11 +235,20 @@ class StudentRecords
     }
 
     /**
-     * Remove a student and their account. Their records (attendance, marks,
-     * invoices) stay, linked to the deleted profile.
+     * Remove a student added by mistake, and their account. Anyone with fee
+     * records or marks stays on the books, or those records would lose their
+     * name and unpaid fees would be owed by nobody: change their status instead.
+     *
+     * @throws ActionFailed
      */
     public function delete(StudentProfile $student, ?User $by = null): void
     {
+        $billed = Invoice::query()->where('student_profile_id', $student->id)->where('status', '!=', InvoiceStatus::Cancelled)->exists();
+
+        if ($billed || Mark::query()->where('student_profile_id', $student->id)->exists()) {
+            throw new ActionFailed(__(':name has fee or exam records, so they can\'t be deleted. Mark them as left instead.', ['name' => $student->user?->name]));
+        }
+
         DB::transaction(function () use ($student, $by) {
             activity('student_profile')->performedOn($student)->causedBy($by)
                 ->withProperties(['admission_number' => $student->admission_number, 'name' => $student->user?->name])

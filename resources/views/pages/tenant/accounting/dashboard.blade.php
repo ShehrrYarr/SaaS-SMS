@@ -27,7 +27,7 @@ $stats = computed(function () {
 });
 
 $recent = computed(fn () => auth()->user()->can('fees.view')
-    ? Payment::query()->with('invoice.student.user')->latest('id')->limit(6)->get()
+    ? Payment::query()->valid()->with('invoice.student.user')->latest('id')->limit(6)->get()
     : collect());
 
 ?>

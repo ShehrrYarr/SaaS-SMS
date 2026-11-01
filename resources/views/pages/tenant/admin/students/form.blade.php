@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use App\Support\Uploads;
+use App\Rules\PhoneNumber;
 use Livewire\WithFileUploads;
 
 use function Livewire\Volt\{computed, layout, mount, protect, rules, state, title, updated, uses};
@@ -198,7 +199,7 @@ rules(function () {
     return [
         'name' => ['required', 'string', 'max:255'],
         'gender' => ['nullable', Rule::enum(Gender::class)],
-        'dob' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
+        'dob' => ['nullable', 'date', 'before:'.tenant()->today()->toDateString(), 'after:1900-01-01'],
         'blood_group' => ['nullable', Rule::in(StudentImport::BLOOD_GROUPS)],
         'address' => ['nullable', 'string', 'max:500'],
         'previous_school' => ['nullable', 'string', 'max:255'],
@@ -207,8 +208,19 @@ rules(function () {
         'remove_photo' => ['boolean'],
 
         'admission_number' => ['nullable', 'string', 'max:30', Rule::unique('student_profiles', 'admission_number')->where('school_id', $school)->ignore($this->student)],
-        'admission_date' => ['nullable', 'date'],
-        'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', $school)->whereNull('deleted_at')],
+        'admission_date' => ['nullable', 'date', 'after:1950-01-01', 'before_or_equal:'.tenant()->today()->toDateString()],
+        'class_id' => ['required', Rule::exists('classes', 'id')->where('school_id', $school)->whereNull('deleted_at'), function ($attribute, $value, $fail) {
+            // Only a change of place needs a free seat.
+            $current = $this->student ? StudentProfile::query()->find($this->student) : null;
+
+            if ($current && (int) $current->class_id === (int) $value && (int) $current->section_id === (int) $this->section_id) {
+                return;
+            }
+
+            if ($problem = app(StudentRecords::class)->placementProblem((int) $value, $this->section_id ? (int) $this->section_id : null, $this->student)) {
+                $fail($problem);
+            }
+        }],
         'section_id' => [$sectionRequired ? 'required' : 'nullable', Rule::exists('sections', 'id')->where('class_id', (int) $this->class_id)->whereNull('deleted_at')],
         'roll_number' => ['nullable', 'string', 'max:20', function ($attribute, $value, $fail) {
             $taken = StudentProfile::query()
@@ -226,13 +238,13 @@ rules(function () {
 
         'username' => [$this->student ? 'required' : 'nullable', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->where('school_id', $school)->ignore($this->userId)],
         'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->where('school_id', $school)->ignore($this->userId)],
-        'phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')->where('school_id', $school)->ignore($this->userId)],
+        'phone' => ['nullable', 'string', 'max:30', new PhoneNumber, Rule::unique('users', 'phone')->where('school_id', $school)->ignore($this->userId)],
 
         'guardians' => ['array', 'max:4'],
         'guardians.*.mode' => ['required', Rule::in(['existing', 'new'])],
         'guardians.*.parent_id' => ['nullable', 'required_if:guardians.*.mode,existing', 'distinct', Rule::exists('parent_profiles', 'id')->where('school_id', $school)->whereNull('deleted_at')],
         'guardians.*.name' => ['nullable', 'required_if:guardians.*.mode,new', 'string', 'max:255'],
-        'guardians.*.phone' => ['nullable', 'string', 'max:30'],
+        'guardians.*.phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
         'guardians.*.email' => ['nullable', 'email', 'max:255'],
         'guardians.*.occupation' => ['nullable', 'string', 'max:100'],
         'guardians.*.relation' => ['required', Rule::enum(GuardianRelation::class)],
@@ -242,6 +254,7 @@ rules(function () {
     'class_id' => __('class'),
     'section_id' => __('section'),
     'dob' => __('date of birth'),
+    'admission_date' => __('admission date'),
     'guardians.*.parent_id' => __('parent'),
     'guardians.*.name' => __('guardian name'),
     'guardians.*.phone' => __('guardian phone'),
@@ -428,7 +441,7 @@ $admitAnother = function () {
                                 <x-form.input name="name" :label="__('Full name')" required maxlength="255" autocomplete="off" />
                                 <div class="row">
                                     <div class="col-sm-4"><x-form.select name="gender" :label="__('Gender')" :options="Gender::options()" /></div>
-                                    <div class="col-sm-4"><x-form.input name="dob" type="date" :label="__('Date of birth')" max="{{ now()->toDateString() }}" /></div>
+                                    <div class="col-sm-4"><x-form.input name="dob" type="date" :label="__('Date of birth')" :max="tenant()->today()->toDateString()" /></div>
                                     <div class="col-sm-4"><x-form.select name="blood_group" :label="__('Blood group')" :options="array_combine(StudentImport::BLOOD_GROUPS, StudentImport::BLOOD_GROUPS)" /></div>
                                 </div>
                                 <x-form.textarea name="address" :label="__('Address')" rows="2" maxlength="500" />
@@ -455,7 +468,7 @@ $admitAnother = function () {
                                                       :placeholder="$editing ? null : $this->suggestedNumber"
                                                       :hint="$editing ? null : __('Leave blank to use the next number (:number).', ['number' => $this->suggestedNumber])" />
                                     </div>
-                                    <div class="col-sm-6"><x-form.input name="admission_date" type="date" :label="__('Admission date')" /></div>
+                                    <div class="col-sm-6"><x-form.input name="admission_date" type="date" :label="__('Admission date')" :max="tenant()->today()->toDateString()" /></div>
                                     <div class="col-sm-5">
                                         <x-form.select name="class_id" :label="__('Class')" required live
                                                        :options="$this->classes->mapWithKeys(fn ($class) => [$class->id => $class->name])->all()" wrapper="mb-4 mb-sm-0" />

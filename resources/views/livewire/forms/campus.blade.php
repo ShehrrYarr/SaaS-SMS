@@ -8,6 +8,7 @@
 use App\Enums\RecordStatus;
 use App\Livewire\Concerns\InteractsWithUi;
 use App\Models\Campus;
+use App\Rules\PhoneNumber;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -42,7 +43,7 @@ mount(function (?int $campus = null) {
 rules(fn () => [
     'name' => ['required', 'string', 'max:100', Rule::unique('campuses', 'name')->where('school_id', tenant()->id)->ignore($this->campus)],
     'code' => ['nullable', 'string', 'max:20'],
-    'phone' => ['nullable', 'string', 'max:30'],
+    'phone' => ['nullable', 'string', 'max:30', new PhoneNumber],
     'email' => ['nullable', 'email', 'max:255'],
     'address' => ['nullable', 'string', 'max:500'],
     'status' => ['required', Rule::enum(RecordStatus::class)],
